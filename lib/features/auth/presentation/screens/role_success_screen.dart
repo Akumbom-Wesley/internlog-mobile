@@ -30,7 +30,7 @@ class RoleSuccessScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                      'Please check your email to verify your supervisor account. Once verified, you can log in.',
+                      'Please check your email to verify your company\'s account. Once verified, you can log in.',
                       style: GoogleFonts.poppins(fontSize: constraints.maxWidth * 0.04),
                       textAlign: TextAlign.center,
                     ),

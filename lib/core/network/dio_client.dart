@@ -55,14 +55,32 @@ class DioClient {
 
   Future<void> login(String email, String password) async {
     try {
+      // Perform login
       final response = await _dio.post('api/auth/login/', data: {
         'email': email,
         'password': password,
       });
-      await _storage.write(key: 'access_token', value: response.data['access']);
+      final token = response.data['access'];
+      await _storage.write(key: 'access_token', value: token);
+
+      // Fetch user data to check supervisor status
+      final userResponse = await _dio.get('api/auth/me');
+      final userData = userResponse.data;
+      if (userData['role'] == 'supervisor' && userData['supervisor'] != null) {
+        final status = userData['supervisor']['status'];
+        if (status == 'pending' || status == 'rejected') {
+          // Clear token to prevent unauthorized access
+          await _storage.delete(key: 'access_token');
+          throw Exception(
+              'The company is yet to approve your status as a supervisor from that company.');
+        }
+      }
     } on DioException catch (e) {
       print('Login Error Response: ${e.response?.data}');
       throw e.response?.data['error'] ?? 'Login failed';
+    } catch (e) {
+      print('Login Error: $e');
+      rethrow;
     }
   }
 
@@ -112,6 +130,12 @@ class DioClient {
   }
 
   Future<void> logout() async {
-    await _storage.delete(key: 'access_token');
+    try {
+      await _dio.post('api/auth/logout/');
+    } catch (e) {
+      print('Logout Error: $e');
+    } finally {
+      await _storage.delete(key: 'access_token');
+    }
   }
 }

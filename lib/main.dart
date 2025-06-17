@@ -7,6 +7,7 @@ import 'features/auth/presentation/screens/role_selection_screen.dart';
 import 'features/auth/presentation/screens/role_success_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/auth/presentation/screens/logout_screen.dart';
 import 'features/user/presentation/screens/user_profile_screen.dart';
 
 void main() {
@@ -14,10 +15,10 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-   MyApp({super.key});
+  MyApp({super.key});
 
   final _router = GoRouter(
-    initialLocation: '/', // Start with splash screen
+    initialLocation: '/',
     routes: [
       GoRoute(
         path: '/',
@@ -31,10 +32,11 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/user/dashboard',
         builder: (context, state) {
-          final role = state.extra as String?; // Retrieve role from extra
+          final role = state.extra as String?;
           return role != null ? DashboardScreen(role: role) : const DashboardScreen(role: 'Unknown');
         },
       ),
+      GoRoute(path: '/auth/logout', builder: (context, state) => const LogoutScreen()),
     ],
   );
 

@@ -6,23 +6,26 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView(
-              children: [
-                _buildPage(context, 'Welcome to InternLog', 'Manage your internship logs easily.'),
-                _buildPage(context, 'Track Skills', 'Monitor your skill growth with AI insights.'),
-                _buildPage(context, 'Secure Validation', 'Get supervisor approval with digital signatures.'),
-              ],
+    return PopScope(
+      canPop: false, // Disable back button
+      child: Scaffold(
+        body: Column(
+          children: [
+            Expanded(
+              child: PageView(
+                children: [
+                  _buildPage(context, 'Welcome to InternLog', 'Manage your internship logs easily.'),
+                  _buildPage(context, 'Track Skills', 'Monitor your skill growth with AI insights.'),
+                  _buildPage(context, 'Secure Validation', 'Get supervisor approval with digital signatures.'),
+                ],
+              ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('Get Started'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () => context.go('/login'),
+              child: const Text('Get Started'),
+            ),
+          ],
+        ),
       ),
     );
   }

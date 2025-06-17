@@ -35,16 +35,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<void> _pickAndUploadImage() async {
-    // Note: You'll need to add image_picker package to pubspec.yaml
-    // For now, this is a placeholder for the image upload functionality
     try {
-      // final ImagePicker picker = ImagePicker();
-      // final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      // if (image != null) {
-      //   await _dioClient.uploadProfileImage(image.path);
-      //   await _fetchUserData(); // Refresh user data
-      // }
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image upload functionality to be implemented')),
       );
@@ -59,25 +50,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final fullName = _userData!['full_name'] ?? 'Unknown User';
     final email = _userData!['email'] ?? '';
     final role = _userData!['role'] ?? 'user';
-    final imageUrl = _userData!['image']; // Get image URL from user data
+    final imageUrl = _userData!['image'];
 
     return Container(
+      margin: const EdgeInsets.only(top: 32),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            Theme.of(context).colorScheme.primary.withOpacity(0.85),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
         child: Column(
           children: [
             Stack(
@@ -237,8 +226,32 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: Text(
+          'Profile',
+          style: GoogleFonts.poppins(
+            color: primaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: primaryColor,
+        elevation: 1,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () {
+              context.go('/auth/logout');
+            },
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userData == null
@@ -271,13 +284,57 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           : SafeArea(
         child: Column(
           children: [
-            _buildProfileHeader(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Stack(
+                children: [
+                  _buildProfileHeader(),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        context.push('/user/profile/edit', extra: _userData);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit,
+                                size: 18, color: primaryColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Edit',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Basic Information Card
                     _buildInfoCard(
                       'Contact Information',
                       [
@@ -295,75 +352,65 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ),
                       ],
                     ),
-
-                    // Role-specific information
-                    if (_userData!['role'] == 'student' && _userData!['student'] != null)
+                    if (_userData!['role'] == 'student' &&
+                        _userData!['student'] != null)
                       _buildInfoCard(
                         'Academic Information',
                         [
                           _buildInfoRow(
                             Icons.badge_outlined,
                             'Matricule Number',
-                            _userData!['student']['matricule_num'] ?? 'Not provided',
+                            _userData!['student']['matricule_num'] ??
+                                'Not provided',
                             Colors.indigo,
                           ),
                           _buildInfoRow(
                             Icons.school_outlined,
                             'Department',
-                            _userData!['student']['department']?['name'] ?? 'Not provided',
+                            _userData!['student']['department']
+                            ?['name'] ??
+                                'Not provided',
                             Colors.purple,
                           ),
                         ],
                       ),
-
-                    if (_userData!['role'] == 'supervisor' && _userData!['supervisor'] != null)
+                    if (_userData!['role'] == 'supervisor' &&
+                        _userData!['supervisor'] != null)
                       _buildInfoCard(
                         'Professional Information',
                         [
                           _buildInfoRow(
                             Icons.business_outlined,
                             'Company',
-                            _userData!['supervisor']['company']?['name'] ?? 'Not provided',
+                            _userData!['supervisor']['company']
+                            ?['name'] ??
+                                'Not provided',
                             Colors.orange,
                           ),
                           _buildInfoRow(
                             Icons.verified_outlined,
                             'Status',
-                            _userData!['supervisor']['status'] ?? 'Not provided',
+                            _userData!['supervisor']['status'] ??
+                                'Not provided',
                             Colors.green,
                           ),
                         ],
                       ),
-
-                    if (_userData!['role'] == 'company_admin' && _userData!['company_admin'] != null)
+                    if (_userData!['role'] == 'company_admin' &&
+                        _userData!['company_admin'] != null)
                       _buildInfoCard(
                         'Company Information',
                         [
                           _buildInfoRow(
                             Icons.business_center_outlined,
                             'Company',
-                            _userData!['company_admin']['company']?['name'] ?? 'Not provided',
+                            _userData!['company_admin']['company']
+                            ?['name'] ??
+                                'Not provided',
                             Colors.deepPurple,
                           ),
                         ],
                       ),
-
-                    // Action buttons
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _fetchUserData,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Refresh Profile'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 24),
                   ],
                 ),
