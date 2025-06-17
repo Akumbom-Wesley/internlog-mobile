@@ -53,6 +53,11 @@ class MyApp extends StatelessWidget {
       '/auth/select-role',
       '/role-success',
       '/auth/logout',
+      '/apply-internship',
+      '/past-logbooks',
+      '/pending-internships',
+      '/settings',
+      '/companies',
     ];
     return protectedRoutes.any((protectedRoute) => route.startsWith(protectedRoute));
   }
@@ -131,6 +136,26 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/auth/logout',
         builder: (context, state) => const LogoutScreen(),
+      ),
+      GoRoute(
+        path: '/apply-internship',
+        builder: (context, state) => const Placeholder(),
+      ),
+      GoRoute(
+        path: '/past-logbooks',
+        builder: (context, state) => const Placeholder(),
+      ),
+      GoRoute(
+        path: '/pending-internships',
+        builder: (context, state) => const Placeholder(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const Placeholder(),
+      ),
+      GoRoute(
+        path: '/companies',
+        builder: (context, state) => const Placeholder(),
       ),
     ],
     // Handle route errors

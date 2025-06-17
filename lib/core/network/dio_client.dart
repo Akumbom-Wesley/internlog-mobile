@@ -187,6 +187,26 @@ class DioClient {
     }
   }
 
+  Future<List<dynamic>> getInternships({String? status}) async {
+    try {
+      final response = await _dio.get(
+        'api/internships/list',
+        queryParameters: status != null ? {'status': status} : null,
+      );
+
+      // Ensure the response is a List
+      if (response.data is List) {
+        return response.data;
+      }
+
+      throw 'Unexpected response format';
+
+    } on DioException catch (e) {
+      print('Get Internships Error Response: ${e.response?.data}');
+      throw e.response?.data['error'] ?? 'Failed to fetch internships';
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _dio.post('api/auth/logout/');

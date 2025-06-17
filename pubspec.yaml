@@ -41,6 +41,7 @@ dependencies:
   http: ^1.4.0
   google_fonts: ^6.2.1
   shared_preferences: ^2.5.3
+  flutter_animate: ^4.5.2
 
 
 
