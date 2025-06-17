@@ -1,14 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:internlog/core/network/dio_client.dart';
 
-class DashboardScreen extends StatelessWidget {
-  final String role;
+class DashboardScreen extends ConsumerStatefulWidget {
+  const DashboardScreen({super.key});
 
-  const DashboardScreen({super.key, required this.role});
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
 
-  // Map backend role value to a friendly label
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  String? _role;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final dioClient = DioClient();
+      final userData = await dioClient.getCurrentUser();
+      setState(() {
+        _role = userData['role'];
+      });
+    } catch (e) {
+      if (mounted) context.go('/auth/login');
+    }
+  }
+
   String getRoleLabel(String role) {
     const roleLabels = {
       'user': 'User',
@@ -25,11 +49,10 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roleLabel = getRoleLabel(role);
+    final roleLabel = _role != null ? getRoleLabel(_role!) : 'Dashboard';
 
     return WillPopScope(
       onWillPop: () async {
-        // Exit the app when back pressed on dashboard
         SystemNavigator.pop();
         return false;
       },
@@ -37,6 +60,12 @@ class DashboardScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text('$roleLabel Dashboard', style: GoogleFonts.poppins()),
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => context.go('/auth/logout'),
+            ),
+          ],
         ),
         body: Center(
           child: Column(

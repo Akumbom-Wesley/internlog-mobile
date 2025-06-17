@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:internlog/core/network/dio_client.dart';
 import 'features/auth/presentation/screens/dashboard_screen.dart';
 import 'features/auth/presentation/screens/registration.dart';
 import 'features/auth/presentation/screens/role_selection_screen.dart';
@@ -17,27 +18,147 @@ void main() {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  final _router = GoRouter(
+  final DioClient _dioClient = DioClient();
+
+  // Auth guard to check if user is authenticated
+  Future<String?> _authGuard(BuildContext context, GoRouterState state) async {
+    try {
+      final isLoggedIn = await _dioClient.isLoggedIn();
+      if (!isLoggedIn) {
+        return '/auth/login';
+      }
+
+      // For protected routes, verify token is still valid
+      if (_isProtectedRoute(state.matchedLocation)) {
+        try {
+          await _dioClient.getCurrentUser();
+          return null; // User is authenticated, allow access
+        } catch (e) {
+          // Token is invalid, redirect to login
+          return '/auth/login';
+        }
+      }
+
+      return null;
+    } catch (e) {
+      return '/auth/login';
+    }
+  }
+
+  // Check if route requires authentication
+  bool _isProtectedRoute(String route) {
+    final protectedRoutes = [
+      '/user/dashboard',
+      '/user/profile',
+      '/auth/select-role',
+      '/role-success',
+      '/auth/logout',
+    ];
+    return protectedRoutes.any((protectedRoute) => route.startsWith(protectedRoute));
+  }
+
+  // Redirect logic for authenticated users trying to access auth pages
+  Future<String?> _authRedirect(BuildContext context, GoRouterState state) async {
+    try {
+      final isLoggedIn = await _dioClient.isLoggedIn();
+      if (isLoggedIn && (state.matchedLocation == '/auth/login' || state.matchedLocation == '/auth/register')) {
+        // User is logged in but trying to access login/register, check their role
+        try {
+          final userData = await _dioClient.getCurrentUser();
+          final role = userData['role'];
+          if (role == 'user' || role == null) {
+            return '/auth/select-role';
+          } else {
+            return '/user/dashboard';
+          }
+        } catch (e) {
+          // Token invalid, allow access to login/register
+          return null;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  late final _router = GoRouter(
     initialLocation: '/',
+    redirect: (context, state) async {
+      // Handle splash screen separately
+      if (state.matchedLocation == '/') {
+        return null;
+      }
+
+      // Check for auth redirects first
+      final authRedirect = await _authRedirect(context, state);
+      if (authRedirect != null) {
+        return authRedirect;
+      }
+
+      // Then check auth guard for protected routes
+      return await _authGuard(context, state);
+    },
     routes: [
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(path: '/auth/register', builder: (context, state) => RegisterScreen()),
-      GoRoute(path: '/auth/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/auth/select-role', builder: (context, state) => const RoleSelectionScreen()),
-      GoRoute(path: '/role-success', builder: (context, state) => const RoleSuccessScreen()),
-      GoRoute(path: '/user/profile', builder: (context, state) => const UserProfileScreen()),
+      GoRoute(
+        path: '/auth/register',
+        builder: (context, state) => RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/auth/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/auth/select-role',
+        builder: (context, state) => const RoleSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/role-success',
+        builder: (context, state) => const RoleSuccessScreen(),
+      ),
+      GoRoute(
+        path: '/user/profile',
+        builder: (context, state) => const UserProfileScreen(),
+      ),
       GoRoute(
         path: '/user/dashboard',
-        builder: (context, state) {
-          final role = state.extra as String?;
-          return role != null ? DashboardScreen(role: role) : const DashboardScreen(role: 'Unknown');
-        },
+        builder: (context, state) => const DashboardScreen(),
       ),
-      GoRoute(path: '/auth/logout', builder: (context, state) => const LogoutScreen()),
+      GoRoute(
+        path: '/auth/logout',
+        builder: (context, state) => const LogoutScreen(),
+      ),
     ],
+    // Handle route errors
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              'Page Not Found',
+              style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'The page you are looking for does not exist.',
+              style: GoogleFonts.poppins(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.go('/'),
+              child: const Text('Go Home'),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 
   @override
@@ -57,6 +178,7 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.light,
       routerConfig: _router,
+      debugShowCheckedModeBanner: false, // Remove debug banner
     );
   }
 }

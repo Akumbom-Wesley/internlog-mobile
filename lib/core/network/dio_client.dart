@@ -24,11 +24,55 @@ class DioClient {
       onError: (error, handler) async {
         print('Error: ${error.message} Response: ${error.response?.data}');
         if (error.response?.statusCode == 401) {
-          // TODO: Handle token refresh if needed
+          // Try to refresh token
+          final refreshed = await _refreshToken();
+          if (refreshed) {
+            // Retry the original request with new token
+            final token = await _storage.read(key: 'access_token');
+            error.requestOptions.headers['Authorization'] = 'Bearer $token';
+            final response = await _dio.fetch(error.requestOptions);
+            return handler.resolve(response);
+          } else {
+            // Refresh failed, clear tokens and redirect to login
+            await _clearTokens();
+          }
         }
         return handler.next(error);
       },
     ));
+  }
+
+  Future<bool> _refreshToken() async {
+    try {
+      final refreshToken = await _storage.read(key: 'refresh_token');
+      if (refreshToken == null) return false;
+
+      final response = await _dio.post('api/auth/token/refresh/', data: {
+        'refresh': refreshToken,
+      });
+
+      await _storage.write(key: 'access_token', value: response.data['access']);
+
+      // If refresh token is also returned, update it
+      if (response.data['refresh'] != null) {
+        await _storage.write(key: 'refresh_token', value: response.data['refresh']);
+      }
+
+      return true;
+    } catch (e) {
+      print('Token refresh failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> _clearTokens() async {
+    await _storage.delete(key: 'access_token');
+    await _storage.delete(key: 'refresh_token');
+  }
+
+  Future<bool> isLoggedIn() async {
+    final token = await _storage.read(key: 'access_token');
+    return token != null;
   }
 
   Future<void> register({
@@ -46,7 +90,13 @@ class DioClient {
         'password': password,
         'confirm_password': confirmPassword,
       });
+
       await _storage.write(key: 'access_token', value: response.data['access']);
+
+      // Store refresh token if provided
+      if (response.data['refresh'] != null) {
+        await _storage.write(key: 'refresh_token', value: response.data['refresh']);
+      }
     } on DioException catch (e) {
       print('Register Error Response: ${e.response?.data}');
       throw e.response?.data ?? {'error': 'Registration failed'};
@@ -60,8 +110,16 @@ class DioClient {
         'email': email,
         'password': password,
       });
+
       final token = response.data['access'];
       await _storage.write(key: 'access_token', value: token);
+
+      // Store refresh token if provided
+      if (response.data['refresh'] != null) {
+        await _storage.write(key: 'refresh_token', value: response.data['refresh']);
+      }
+
+      _dio.options.headers['Authorization'] = 'Bearer $token';
 
       // Fetch user data to check supervisor status
       final userResponse = await _dio.get('api/auth/me');
@@ -70,7 +128,7 @@ class DioClient {
         final status = userData['supervisor']['status'];
         if (status == 'pending' || status == 'rejected') {
           // Clear token to prevent unauthorized access
-          await _storage.delete(key: 'access_token');
+          await _clearTokens();
           throw Exception(
               'The company is yet to approve your status as a supervisor from that company.');
         }
@@ -135,7 +193,7 @@ class DioClient {
     } catch (e) {
       print('Logout Error: $e');
     } finally {
-      await _storage.delete(key: 'access_token');
+      await _clearTokens();
     }
   }
 }
