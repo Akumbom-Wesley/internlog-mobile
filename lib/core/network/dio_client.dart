@@ -207,6 +207,39 @@ class DioClient {
     }
   }
 
+  Future<Map<String, dynamic>> getLogbook(int logbookId) async {
+    try {
+      final response = await _dio.get('api/logbooks/$logbookId/');
+      return response.data;
+    } on DioException catch (e) {
+      print('Get Logbook Error Response: ${e.response?.data}');
+      if (e.response?.statusCode == 404) {
+        throw 'Logbook not found';
+      }
+      throw e.response?.data['error'] ?? 'Failed to fetch logbook';
+    }
+  }
+
+  Future<List<dynamic>> getAssignedStudents() async {
+    try {
+      final response = await _dio.get('api/supervisors/assigned-students/');
+      return response.data;
+    } on DioException catch (e) {
+      print('Get Assigned Students Error Response: ${e.response?.data}');
+      throw e.response?.data['error'] ?? 'Failed to fetch assigned students';
+    }
+  }
+
+  Future<List<dynamic>> getRecentActivities() async {
+    try {
+      final response = await _dio.get('api/supervisors/assigned-students/activity/');
+      return response.data;
+    } on DioException catch (e) {
+      print('Get Recent Activities Error Response: ${e.response?.data}');
+      throw e.response?.data['error'] ?? 'Failed to fetch recent activities';
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _dio.post('api/auth/logout/');

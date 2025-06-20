@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:internlog/core/network/dio_client.dart';
-import '../widgets/internship_card.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/network/dio_client.dart';
+import '../widgets/drawer_widget.dart';
+import '../widgets/bottom_navigation_bar.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -16,7 +15,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String? _role;
-  List<dynamic> _internships = [];
+  List<dynamic> _assignedStudents = [];
+  List<dynamic> _recentActivities = [];
   bool _isLoading = true;
 
   @override
@@ -32,43 +32,66 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       setState(() {
         _role = userData['role'];
       });
-      await _fetchInternships();
+      if (_role == 'supervisor') {
+        await _fetchSupervisorData();
+      }
     } catch (e) {
-      if (mounted) context.go('/auth/login');
-    }
-  }
-
-  Future<void> _fetchInternships() async {
-    setState(() => _isLoading = true);
-    try {
-      final dioClient = DioClient();
-      _internships = await dioClient.getInternships(status: 'ongoing');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load internships: $e')),
-      );
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/auth/login');
+      }
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  String getRoleLabel(String role) {
-    const roleLabels = {
-      'user': 'User',
-      'student': 'Student',
-      'lecturer': 'Lecturer',
-      'supervisor': 'Supervisor',
-      'company_admin': 'Company Admin',
-      'super_admin': 'Super Admin',
-    };
-    return roleLabels[role] ?? (role.isNotEmpty
-        ? role[0].toUpperCase() + role.substring(1).replaceAll('_', ' ')
-        : 'Dashboard');
+  Future<void> _fetchSupervisorData() async {
+    final dioClient = DioClient();
+    try {
+      final studentsResponse = await dioClient.getAssignedStudents();
+      final activitiesResponse = await dioClient.getRecentActivities();
+
+      setState(() {
+        _assignedStudents = (studentsResponse is List)
+            ? studentsResponse
+            .where((student) => student != null)
+            .map((student) => {
+          'full_name': student['internship_requests'][0]['student'].split(' - ')[0],
+          'matricule_num': student['matricule_num'],
+        })
+            .toList()
+            : [];
+        _recentActivities = (activitiesResponse is List)
+            ? activitiesResponse
+            .where((activity) => activity != null)
+            .map((activity) => {
+          'student_name': activity['student']['name'],
+          'description': activity['description'],
+          'time_ago': _calculateTimeAgo(activity['entry_date']),
+          'logbook_id': activity['entry_id'], // Assuming entry_id can be used as logbook_id
+        })
+            .toList()
+            : [];
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load supervisor data: $e')),
+        );
+      }
+    }
+  }
+
+  String _calculateTimeAgo(String entryDate) {
+    final now = DateTime.now();
+    final entry = DateTime.parse(entryDate);
+    final difference = now.difference(entry);
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    return '${difference.inMinutes}m ago';
   }
 
   @override
   Widget build(BuildContext context) {
-    final roleLabel = _role != null ? getRoleLabel(_role!) : 'Dashboard';
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return WillPopScope(
@@ -79,188 +102,205 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            '$roleLabel Dashboard',
-            style: GoogleFonts.poppins(color: primaryColor, fontWeight: FontWeight.bold),
-          ),
-          centerTitle: true,
-        ),
-        drawer: _buildDrawer(primaryColor),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _role == 'student'
-            ? _internships.isEmpty
-            ? Center(
-          child: Text(
-            'No ongoing internships found.',
+            'Dashboard',
             style: GoogleFonts.poppins(
-              fontSize: 18,
-              color: Colors.grey,
+              color: primaryColor,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        )
-            : ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _internships.length,
-          itemBuilder: (context, index) {
-            return InternshipCard(internship: _internships[index]);
-          },
-        )
-            : Center(
-          child: Text(
-            'Welcome to the $roleLabel Dashboard!',
-            style: GoogleFonts.poppins(fontSize: 24),
+          centerTitle: true,
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: Icon(Icons.menu, color: primaryColor),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(Color primaryColor) {
-    return Drawer(
-      child: Container(
-        color: Colors.white,
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey.shade200,
-                    width: 1,
+        drawer: DrawerWidget(primaryColor: primaryColor),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _role == 'supervisor'
+            ? SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Assigned Students Section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Assigned Students',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
                   ),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.app_registration,
-                      size: 32,
-                      color: primaryColor,
-                    ),
+              _assignedStudents.isEmpty
+                  ? Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'No assigned students found.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'InternLog',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ).animate().fadeIn(duration: 500.ms).slideX(begin: -1, end: 0),
-                  const SizedBox(height: 8),
-                  FutureBuilder<Map<String, dynamic>>(
-                    future: DioClient().getCurrentUser(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            color: primaryColor,
-                            strokeWidth: 2,
-                          ),
-                        );
-                      }
-                      if (snapshot.hasError || !snapshot.hasData) {
-                        return Text(
-                          'Unknown User',
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
-                        );
-                      }
-                      final fullName = snapshot.data!['full_name'] ?? 'Unknown User';
-                      return GestureDetector(
-                        onTap: () => context.go('/user/profile'),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                fullName,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Icon(Icons.person, size: 16, color: primaryColor),
-                          ],
+                ),
+              )
+                  : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: _assignedStudents.length,
+                itemBuilder: (context, index) {
+                  final student = _assignedStudents[index];
+
+                  // Null safety checks
+                  if (student == null) return const SizedBox.shrink();
+
+                  final fullName = student['full_name']?.toString() ?? 'Unknown Student';
+                  final matriculeNum = student['matricule_num']?.toString() ?? 'Unknown Matricule';
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.grey[200],
+                      child: Text(
+                        fullName.isNotEmpty ? fullName[0].toUpperCase() : '?',
+                        style: GoogleFonts.poppins(
+                          color: Colors.black,
                         ),
-                      );
+                      ),
+                    ),
+                    title: Text(
+                      fullName,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      matriculeNum,
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                    ),
+                    onTap: () {
+                      // Navigate to student details screen if needed
                     },
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  _buildDrawerItem(Icons.work_outline, 'Internship Requests', '/apply-internship'),
-                  _buildDrawerItem(Icons.history_outlined, 'Logbook History', '/past-logbooks'),
-                  _buildDrawerItem(Icons.hourglass_empty_outlined, 'Pending Internships', '/pending-internships'),
-                  _buildDrawerItem(Icons.settings_outlined, 'Settings', '/settings'),
-                  _buildDrawerItem(Icons.store_mall_directory_outlined, 'View Companies', '/companies'),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Divider(color: Colors.grey.shade300),
+              // Recent Activity Section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Recent Activity',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
                   ),
-                  const SizedBox(height: 8),
-                  _buildDrawerItem(Icons.logout_outlined, 'Logout', '/auth/logout', isDestructive: true),
-                ],
+                ),
               ),
-            ),
-          ],
+              _recentActivities.isEmpty
+                  ? Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'No recent activities found.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+              )
+                  : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: _recentActivities.length,
+                itemBuilder: (context, index) {
+                  final activity = _recentActivities[index];
+
+                  // Null safety checks
+                  if (activity == null) return const SizedBox.shrink();
+
+                  final studentName = activity['student_name']?.toString() ?? 'Unknown Student';
+                  final description = activity['description']?.toString() ?? 'Submitted logbook entry';
+                  final timeAgo = activity['time_ago']?.toString() ?? 'Unknown time';
+                  final logbookId = activity['logbook_id'];
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.grey[200],
+                      child: Text(
+                        studentName.isNotEmpty ? studentName[0].toUpperCase() : '?',
+                        style: GoogleFonts.poppins(
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      studentName,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      description,
+                      style: GoogleFonts.poppins(
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    trailing: Text(
+                      timeAgo,
+                      style: GoogleFonts.poppins(
+                        color: Colors.black,
+                      ),
+                    ),
+                    onTap: () async {
+                      // Only attempt to fetch logbook if logbookId exists
+                      if (logbookId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Logbook ID not available'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      try {
+                        final dioClient = DioClient();
+                        final logbookData = await dioClient.getLogbook(logbookId);
+                        // Navigate to a logbook detail screen with logbookData
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error loading logbook: $e'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        )
+            : Center(
+          child: Text(
+            'Welcome to the $_role Dashboard!',
+            style: GoogleFonts.poppins(fontSize: 24),
+          ),
         ),
+        bottomNavigationBar: BottomNavBar(role: _role, currentIndex: 0),
       ),
     );
-  }
-
-  Widget _buildDrawerItem(IconData icon, String title, String route, {bool isDestructive = false}) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final itemColor = isDestructive ? Colors.red.shade600 : primaryColor;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: itemColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: itemColor, size: 20),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: Colors.grey.shade800,
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
-          ),
-        ),
-        onTap: () {
-          Navigator.pop(context);
-          context.go(route);
-        },
-        hoverColor: itemColor.withOpacity(0.05),
-        splashColor: itemColor.withOpacity(0.1),
-      ),
-    ).animate().fadeIn(duration: 400.ms).scale(begin: const Offset(0.95, 0.95), end: const Offset(1.0, 1.0));
   }
 }
