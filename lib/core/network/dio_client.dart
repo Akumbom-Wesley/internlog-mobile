@@ -220,6 +220,36 @@ class DioClient {
     }
   }
 
+  Future<Map<String, dynamic>> getOngoingLogbook(int internshipId) async {
+    try {
+      final response = await _dio.get('api/logbooks/$internshipId/ongoing/');
+      return response.data;
+    } on DioException catch (e) {
+      print('Get Ongoing Logbook Error Response: ${e.response?.data}');
+      if (e.response?.statusCode == 403) {
+        throw 'Only students can access their logbooks.';
+      } else if (e.response?.statusCode == 404) {
+        throw 'No ongoing logbook found for this internship.';
+      }
+      throw e.response?.data['error'] ?? 'Failed to fetch ongoing logbook';
+    }
+  }
+
+  Future<Map<String, dynamic>> getOngoingInternship() async {
+    try {
+      final response = await _dio.get('api/internships/ongoing/');
+      return response.data;
+    } on DioException catch (e) {
+      print('Get Ongoing Internship Error Response: ${e.response?.data}');
+      if (e.response?.statusCode == 403) {
+        throw 'Only students can access their ongoing internship.';
+      } else if (e.response?.statusCode == 404) {
+        throw 'No ongoing internship found for this student.';
+      }
+      throw e.response?.data['error'] ?? 'Failed to fetch ongoing internship';
+    }
+  }
+
   Future<List<dynamic>> getAssignedStudents() async {
     try {
       final response = await _dio.get('api/supervisors/assigned-students/');
