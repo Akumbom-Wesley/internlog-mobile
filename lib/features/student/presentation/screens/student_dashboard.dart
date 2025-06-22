@@ -35,41 +35,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
     setState(() => _isLoading = true);
     final dioClient = DioClient();
     try {
-      print('=== Starting _fetchStudentData ===');
-
-      // 1. Get user data
-      print('Step 1: Fetching user data...');
+      // Get user data
       final userData = await dioClient.getCurrentUser();
-      print('User data received: $userData');
-      print('User data type: ${userData.runtimeType}');
 
-      // 2. Get internship data
-      print('Step 2: Fetching internship data...');
+      // Get internship data
       final internship = await dioClient.getOngoingInternship();
-      print('Internship data received: $internship');
-      print('Internship data type: ${internship.runtimeType}');
 
       if (internship != null) {
-        print('Step 3: Processing internship data...');
-
-        // 3. Safely access student data
+        // Safely access student data
         Map<String, dynamic> studentData = {};
-        print('Checking internship[\'student\']...');
-        print('internship[\'student\'] = ${internship['student']}');
-        print('internship[\'student\'] type = ${internship['student'].runtimeType}');
 
         if (internship['student'] is Map) {
           studentData = Map<String, dynamic>.from(internship['student']);
-          print('Student data extracted: $studentData');
-        } else {
-          print('Warning: internship[\'student\'] is not a Map!');
         }
 
-        // 4. Safely parse internship ID
-        print('Step 4: Processing internship ID...');
-        print('internship[\'id\'] = ${internship['id']}');
-        print('internship[\'id\'] type = ${internship['id'].runtimeType}');
-
+        // Safely parse internship ID
         int internshipId = 0;
         if (internship['id'] != null) {
           if (internship['id'] is int) {
@@ -78,26 +58,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
             internshipId = int.tryParse(internship['id']) ?? 0;
           }
         }
-        print('Parsed internship ID: $internshipId');
 
-        // 5. Safely extract names and data
-        print('Step 5: Extracting display data...');
+        // Safely extract names and data
         String studentName = '';
         String matriculeNum = '';
 
         try {
           studentName = userData['full_name']?.toString() ?? 'Unknown';
-          print('Student name extracted: $studentName');
         } catch (e) {
-          print('Error extracting student name: $e');
           studentName = 'Unknown';
         }
 
         try {
           matriculeNum = studentData['matricule_num']?.toString() ?? 'Not available';
-          print('Matricule number extracted: $matriculeNum');
         } catch (e) {
-          print('Error extracting matricule number: $e');
           matriculeNum = 'Not available';
         }
 
@@ -106,38 +80,23 @@ class _StudentDashboardState extends State<StudentDashboard> {
           _studentName = studentName;
           _matriculeNum = matriculeNum;
         });
-        print('State updated successfully');
 
-        // 6. Only fetch logbook if we have a valid ID
+        // Only fetch logbook if we have a valid ID
         if (internshipId > 0) {
-          print('Step 6: Fetching logbook for internship ID: $internshipId');
           try {
             final logbook = await dioClient.getOngoingLogbook(internshipId);
-            print('Logbook data received: $logbook');
 
             if (logbook != null && logbook is Map) {
               setState(() {
                 _ongoingLogbook = Map<String, dynamic>.from(logbook);
               });
-              print('Logbook state updated successfully');
             }
           } catch (logbookError) {
-            print('Error fetching logbook: $logbookError');
             // Don't throw here, just log the error
           }
-        } else {
-          print('Invalid internship ID: ${internship['id']}');
         }
-      } else {
-        print('No internship data received');
       }
-
-      print('=== _fetchStudentData completed successfully ===');
     } catch (e, stackTrace) {
-      print('=== Error in _fetchStudentData ===');
-      print('Error: $e');
-      print('Stack trace: $stackTrace');
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -167,6 +126,62 @@ class _StudentDashboardState extends State<StudentDashboard> {
       case 3: return 'rd';
       default: return 'th';
     }
+  }
+
+  String _getInternshipDatesFormatted() {
+    if (_currentInternship == null) return 'Not available';
+
+    final startDate = _currentInternship!['start_date'];
+    final endDate = _currentInternship!['end_date'];
+
+    if (startDate == null || endDate == null) return 'Not available';
+
+    try {
+      return 'Start date: ${_formatDate(startDate)}\nEnd date: ${_formatDate(endDate)}';
+    } catch (e) {
+      return 'Not available';
+    }
+  }
+
+  String _getWeekDateRange(Map<String, dynamic> log) {
+    if (log['logbook_entries'] != null && log['logbook_entries'].isNotEmpty) {
+      final firstEntry = log['logbook_entries'][0];
+      final createdAt = firstEntry['created_at'] as String; // Use the structured field
+      final startDate = DateTime.tryParse(createdAt.split('T')[0]); // Extract date part
+
+      if (startDate != null) {
+        final endDate = startDate.add(Duration(days: 6));
+        return '${DateFormat('MMM d').format(startDate)} - ${DateFormat('MMM d').format(endDate)}';
+      }
+    }
+    return 'Date range not available';
+  }
+
+  String _getStatusLabel(String status) {
+    const statusMap = {
+      'approved': 'Approved',
+      'rejected': 'Rejected',
+      'pending_approval': 'Pending Approval',
+    };
+    return statusMap[status] ?? status;
+  }
+
+  IconData _getStatusIcon(String status) {
+    const statusIcons = {
+      'approved': Icons.check_circle,
+      'rejected': Icons.cancel,
+      'pending_approval': Icons.hourglass_empty,
+    };
+    return statusIcons[status] ?? Icons.help;
+  }
+
+  Color _getStatusColor(String status) {
+    const statusColors = {
+      'approved': Colors.green,
+      'rejected': Colors.red,
+      'pending_approval': Colors.orange,
+    };
+    return statusColors[status] ?? Colors.grey;
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
@@ -211,7 +226,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                    maxLines: value.contains('\n') ? 3 : 1,
                   ),
                 ],
               ),
@@ -281,14 +296,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
             _buildDetailRow(
               Icons.business,
               'Company',
-              _currentInternship?['company']?.toString() ?? 'Tech Solutions Inc.',
+              _currentInternship?['company']?.toString() ?? 'Not available',
             ),
             _buildDetailRow(
               Icons.calendar_today,
               'Dates',
-              _currentInternship != null
-                  ? '${_formatDate(_currentInternship!['start_date'])} - ${_formatDate(_currentInternship!['end_date'])}'
-                  : 'Not available',
+              _getInternshipDatesFormatted(),
             ),
             _buildDetailRow(
               Icons.person,
@@ -296,9 +309,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
               _currentInternship?['supervisor']?['user_name']?.toString() ?? 'Not assigned',
             ),
             const SizedBox(height: 24),
-            // Logbook Section
+            // Weekly Progress Section
             Text(
-              'Logbook',
+              'Weekly Progress',
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -306,17 +319,74 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildDetailRow(
-              Icons.book,
-              'View Logbook',
-              'Week 1: June 3 - June 9', // Replace with dynamic week if available
-              onTap: () {
-                if (_currentInternship?['id'] != null && _ongoingLogbook?['id'] != null) {
-                  // Navigate to logbook detail screen
-                  // Example: context.go('/logbook/${_ongoingLogbook!['id']}');
-                }
-              },
-            ),
+            if (_ongoingLogbook != null && _ongoingLogbook!['weekly_logs'] != null)
+              ..._ongoingLogbook!['weekly_logs'].map<Widget>((log) {
+                final status = log['status'] ?? 'pending_approval';
+                final statusLabel = _getStatusLabel(status);
+                final statusIcon = _getStatusIcon(status);
+                final statusColor = _getStatusColor(status);
+                final weekNumber = log['week_no'] ?? 'Unknown';
+
+                String dateRange = _getWeekDateRange(log);
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Week $weekNumber',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        dateRange,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(statusIcon, color: statusColor, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            statusLabel,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList()
+            else
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'No weekly logs available yet.',
+                  style: GoogleFonts.poppins(color: Colors.grey),
+                ),
+              ),
           ],
         ),
       ),

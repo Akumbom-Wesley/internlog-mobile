@@ -9,6 +9,7 @@ import 'features/auth/presentation/screens/role_success_screen.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/logout_screen.dart';
+import 'features/student/presentation/screens/weekly_logs.dart';
 import 'features/user/presentation/screens/user_profile_screen.dart';
 
 void main() {
@@ -157,6 +158,11 @@ class MyApp extends StatelessWidget {
         path: '/companies',
         builder: (context, state) => const Placeholder(),
       ),
+      GoRoute(
+        path: '/user/logbook',
+        builder: (context, state) => const WeeklyLogsScreen(),
+      ),
+
     ],
     // Handle route errors
     errorBuilder: (context, state) => Scaffold(

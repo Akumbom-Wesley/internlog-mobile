@@ -270,6 +270,16 @@ class DioClient {
     }
   }
 
+  Future<void> createWeeklyLog(int logbookId) async {
+    try {
+      await _dio.post('api/logbooks/$logbookId/create-week/');
+    } on DioException catch (e) {
+      print('Create Weekly Log Error: ${e.response?.data}');
+      throw e.response?.data['error'] ?? 'Failed to create weekly log';
+    }
+  }
+
+
   Future<void> logout() async {
     try {
       await _dio.post('api/auth/logout/');

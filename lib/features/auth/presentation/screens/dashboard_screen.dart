@@ -8,7 +8,7 @@ import '../../../../core/network/dio_client.dart';
 import '../widgets/drawer_widget.dart';
 import '../widgets/bottom_navigation_bar.dart';
 import 'supervisor_dashboard.dart';
-import 'student_dashboard.dart';
+import '../../../student/presentation/screens/student_dashboard.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
