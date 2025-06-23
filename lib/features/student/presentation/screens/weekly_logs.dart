@@ -1,5 +1,4 @@
 // lib/features/user/presentation/screens/weekly_logs_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -21,10 +20,10 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
   DateTime? _internshipStartDate;
 
   final List<Color> _iconColors = [
-    const Color(0xFF1A237E), // Dark blue
-    const Color(0xFF283593), // Medium blue
-    const Color(0xFF3949AB), // Light blue
-    const Color(0xFF5C6BC0), // Very light blue
+    const Color(0xFF1A237E),
+    const Color(0xFF283593),
+    const Color(0xFF3949AB),
+    const Color(0xFF5C6BC0),
   ];
 
   @override
@@ -76,7 +75,6 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
           }
         }
 
-        // Fallback: infer from internship start date + week offset
         final weekNo = log['week_no'];
         if (_internshipStartDate != null && weekNo is int) {
           return _internshipStartDate!.add(Duration(days: 7 * (weekNo - 1)));
@@ -88,18 +86,9 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
     return null;
   }
 
-
-  Color _getNextIconColor() {
-    final color = _iconColors[_iconIndex % _iconColors.length];
-    _iconIndex = (_iconIndex + 1) % _iconColors.length;
-    return color;
-  }
-
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    _iconIndex = 0; // Reset for each build
-
     return WillPopScope(
       onWillPop: () async {
         context.go('/user/dashboard');
@@ -144,119 +133,54 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
             : null,
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _weeklyLogs.isEmpty
-                    ? Center(
-                  child: Text(
-                    'No weekly logs available yet.\nTap the + button to create one.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
-                )
-                    : ListView.builder(
-                  itemCount: _weeklyLogs.length,
-                  itemBuilder: (context, index) {
-                    final log = _weeklyLogs[index];
+            : _weeklyLogs.isEmpty
+            ? Center(
+          child: Text(
+            'No weekly logs available yet.\nTap the + button to create one.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+        )
+            : ListView.builder(
+          itemCount: _weeklyLogs.length,
+          padding: const EdgeInsets.all(16),
+          itemBuilder: (context, index) {
+            final log = _weeklyLogs[index];
+            final weekNo = (log['week_no']?.toString() ?? 'Unknown').toString();
+            final status = (log['status'] ?? 'pending_approval').toString();
+            final range = _formatDateRange(_parseStartDate(log));
 
-                    // Safely extract values with null checks
-                    final weekNo = (log['week_no']?.toString() ?? 'Unknown').toString();
-                    final status = (log['status'] ?? 'pending_approval').toString();
-                    final range = _formatDateRange(_parseStartDate(log));
+            IconData statusIcon;
+            Color statusColor;
+            switch (status) {
+              case 'approved':
+                statusIcon = Icons.check_circle;
+                statusColor = Colors.green;
+                break;
+              case 'rejected':
+                statusIcon = Icons.cancel;
+                statusColor = Colors.red;
+                break;
+              default:
+                statusIcon = Icons.hourglass_empty;
+                statusColor = Colors.orange;
+            }
 
-                    return _buildLogCard(
-                      context: context,
-                      weekNo: weekNo,
-                      range: range,
-                      status: status,
-                      onTap: () => context.go('/user/logbook/week/$weekNo'),
-                    );
-                  },
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              leading: Icon(Icons.calendar_today, color: _iconColors[index % _iconColors.length]),
+              title: Text(
+                'Week $weekNo',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: primaryColor,
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogCard({
-    required BuildContext context,
-    required String weekNo,
-    required String range,
-    required String status,
-    required VoidCallback onTap,
-  }) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final iconColor = _getNextIconColor();
-
-    String statusLabel;
-    IconData statusIcon;
-    Color statusColor;
-
-    switch (status) {
-      case 'approved':
-        statusLabel = 'Approved';
-        statusIcon = Icons.check_circle;
-        statusColor = Colors.green;
-        break;
-      case 'rejected':
-        statusLabel = 'Rejected';
-        statusIcon = Icons.cancel;
-        statusColor = Colors.red;
-        break;
-      case 'pending_approval':
-      default:
-        statusLabel = 'Pending Approval';
-        statusIcon = Icons.hourglass_empty;
-        statusColor = Colors.orange;
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.calendar_today, color: iconColor, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  'Week $weekNo',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: primaryColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(left: 36),
-              child: Column(
+              subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -266,15 +190,15 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
                       color: Colors.grey[700],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(statusIcon, color: statusColor, size: 20),
-                      const SizedBox(width: 8),
+                      Icon(statusIcon, color: statusColor, size: 18),
+                      const SizedBox(width: 4),
                       Text(
-                        statusLabel,
+                        status.replaceAll('_', ' ').toTitleCase(),
                         style: GoogleFonts.poppins(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: statusColor,
                         ),
@@ -283,10 +207,21 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
                   ),
                 ],
               ),
-            ),
-          ],
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                final weekId = log['id']?.toString() ?? '0';
+                context.push('/user/logbook/week/$weekId');
+              },
+            );
+          },
         ),
       ),
     );
+  }
+}
+
+extension StringExtension on String {
+  String toTitleCase() {
+    return split(' ').map((str) => str[0].toUpperCase() + str.substring(1)).join(' ');
   }
 }
