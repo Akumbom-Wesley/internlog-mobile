@@ -10,6 +10,7 @@ import 'features/auth/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/logout_screen.dart';
 import 'features/student/presentation/screens/log_entries_screen.dart';
+import 'features/student/presentation/screens/logentry_detail_screen.dart';
 import 'features/student/presentation/screens/weekly_logs.dart';
 import 'features/user/presentation/screens/user_profile_screen.dart';
 
@@ -170,8 +171,14 @@ class MyApp extends StatelessWidget {
           return LogEntriesScreen(weeklyLogId: id);
         },
       ),
-
-
+      // GoRoute(
+      //   path: '/user/log-entry/:id',
+      //   builder: (context, state) {
+      //     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+      //     return LogEntryDetailScreen(entryId: id);
+      //   },
+      // ),
+      
     ],
     // Handle route errors
     errorBuilder: (context, state) => Scaffold(

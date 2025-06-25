@@ -1,12 +1,13 @@
-// lib/features/user/presentation/screens/weekly_logs_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:internlog/core/network/dio_client.dart';
+import '../../../auth/presentation/widgets/bottom_navigation_bar.dart';
 
 class WeeklyLogsScreen extends StatefulWidget {
-  const WeeklyLogsScreen({super.key});
+  final String? role;
+  const WeeklyLogsScreen({super.key, this.role});
 
   @override
   State<WeeklyLogsScreen> createState() => _WeeklyLogsScreenState();
@@ -16,15 +17,7 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
   bool _isLoading = true;
   List<dynamic> _weeklyLogs = [];
   int? _logbookId;
-  int _iconIndex = 0;
   DateTime? _internshipStartDate;
-
-  final List<Color> _iconColors = [
-    const Color(0xFF1A237E),
-    const Color(0xFF283593),
-    const Color(0xFF3949AB),
-    const Color(0xFF5C6BC0),
-  ];
 
   @override
   void initState() {
@@ -86,6 +79,83 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
     return null;
   }
 
+  Widget _buildStatusWidget(String status) {
+    switch (status) {
+      case 'approved':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.green.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.verified, color: Colors.green, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                'Approved',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        );
+      case 'rejected':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.red.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cancel_outlined, color: Colors.red, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                'Rejected',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        );
+      default:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.amber.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.amber.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.schedule, color: Colors.amber[700], size: 16),
+              const SizedBox(width: 4),
+              Text(
+                'Pending Review',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.amber[700],
+                ),
+              ),
+            ],
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
@@ -95,22 +165,21 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
         return false;
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
-          title: Text(
-            'Weekly Logs',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: primaryColor,
+          title: Center(
+            child: Text(
+              'Weekly Logs',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
           ),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/user/dashboard'),
-          ),
+          leading: BackButton(onPressed: () => context.pop()),
+          actions: const [SizedBox(width: 48)],
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          backgroundColor: Colors.white,
         ),
         floatingActionButton: _logbookId != null
             ? FloatingActionButton(
@@ -135,13 +204,25 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
             ? const Center(child: CircularProgressIndicator())
             : _weeklyLogs.isEmpty
             ? Center(
-          child: Text(
-            'No weekly logs available yet.\nTap the + button to create one.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.assignment_outlined,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No weekly logs available yet.\nTap the + button to create one.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         )
             : ListView.builder(
@@ -153,67 +234,121 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
             final status = (log['status'] ?? 'pending_approval').toString();
             final range = _formatDateRange(_parseStartDate(log));
 
-            IconData statusIcon;
-            Color statusColor;
-            switch (status) {
-              case 'approved':
-                statusIcon = Icons.check_circle;
-                statusColor = Colors.green;
-                break;
-              case 'rejected':
-                statusIcon = Icons.cancel;
-                statusColor = Colors.red;
-                break;
-              default:
-                statusIcon = Icons.hourglass_empty;
-                statusColor = Colors.orange;
-            }
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Material(
+                elevation: 2,
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    final weekId = log['id']?.toString() ?? '0';
+                    context.push('/user/logbook/week/$weekId');
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Week number indicator
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              weekNo,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
 
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              leading: Icon(Icons.calendar_today, color: _iconColors[index % _iconColors.length]),
-              title: Text(
-                'Week $weekNo',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: primaryColor,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    range,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey[700],
+                        // Week details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Week $weekNo',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                range,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              if (log['logbook_entries'] != null &&
+                                  log['logbook_entries'].isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.list_alt,
+                                      size: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${log['logbook_entries'].length} entries',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // Status and arrow
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _buildStatusWidget(status),
+                            const SizedBox(height: 8),
+                            Icon(
+                              Icons.chevron_right,
+                              color: Colors.grey[600],
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(statusIcon, color: statusColor, size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        status.replaceAll('_', ' ').toTitleCase(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: statusColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                final weekId = log['id']?.toString() ?? '0';
-                context.push('/user/logbook/week/$weekId');
-              },
             );
           },
+        ),
+        bottomNavigationBar: BottomNavBar(
+          role: widget.role ?? 'student',
+          currentIndex: 1,
         ),
       ),
     );

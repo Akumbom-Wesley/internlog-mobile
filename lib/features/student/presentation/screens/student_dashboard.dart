@@ -114,7 +114,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final dateTime = DateTime.parse(dateString);
     final day = dateTime.day;
     final suffix = _getOrdinalSuffix(day);
-    final formatter = DateFormat('d\'$suffix\' MMMM, yyyy');
+    final formatter = DateFormat('d\'$suffix\' MMMM');
     return formatter.format(dateTime);
   }
 
@@ -137,7 +137,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (startDate == null || endDate == null) return 'Not available';
 
     try {
-      return 'Start date: ${_formatDate(startDate)}\nEnd date: ${_formatDate(endDate)}';
+      return '${_formatDate(startDate)} - ${_formatDate(endDate)}';
     } catch (e) {
       return 'Not available';
     }
@@ -199,15 +199,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
+          color: Color(0xFF1A237E).withOpacity(0.05), // Very light dark blue background
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xFF1A237E).withOpacity(0.1), // Subtle dark blue border
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(width: 12),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,14 +227,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     label,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.grey[700],
+                      color: Color(0xFF1A237E).withOpacity(0.7), // Dark blue tint for labels
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
                     value.isNotEmpty ? value : 'Not available',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Color(0xFF1A237E), // Dark blue for values
+                      fontWeight: FontWeight.w600,
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: value.contains('\n') ? 3 : 1,
@@ -239,155 +253,304 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryColor = Color(0xFF1A237E); // Use consistent dark blue
     iconIndex = 0; // Reset icon index for each build
 
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Student Information
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.grey[200],
-                  child: Text(
-                    _studentName?.isNotEmpty ?? false ? _studentName![0].toUpperCase() : '?',
-                    style: GoogleFonts.poppins(color: Colors.black),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _studentName ?? 'Loading...',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      'Student ID: ${_matriculeNum ?? 'Loading...'}',
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey[700],
-                      ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF1A237E).withOpacity(0.02), // Very subtle dark blue at top
+            Colors.white,
+          ],
+        ),
+      ),
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1A237E)))
+          : SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Student Information Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Color(0xFF1A237E), // Dark blue background
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFF1A237E).withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Internship Details Section
-            Text(
-              'Internship Details',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildDetailRow(
-              Icons.business,
-              'Company',
-              _currentInternship?['company']?.toString() ?? 'Not available',
-            ),
-            _buildDetailRow(
-              Icons.calendar_today,
-              'Dates',
-              _getInternshipDatesFormatted(),
-            ),
-            _buildDetailRow(
-              Icons.person,
-              'Supervisor',
-              _currentInternship?['supervisor']?['user_name']?.toString() ?? 'Not assigned',
-            ),
-            const SizedBox(height: 24),
-            // Weekly Progress Section
-            Text(
-              'Weekly Progress',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_ongoingLogbook != null && _ongoingLogbook!['weekly_logs'] != null)
-              ..._ongoingLogbook!['weekly_logs'].map<Widget>((log) {
-                final status = log['status'] ?? 'pending_approval';
-                final statusLabel = _getStatusLabel(status);
-                final statusIcon = _getStatusIcon(status);
-                final statusColor = _getStatusColor(status);
-                final weekNumber = log['week_no'] ?? 'Unknown';
-
-                String dateRange = _getWeekDateRange(log);
-
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Week $weekNumber',
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 35,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child: Text(
+                        _studentName?.isNotEmpty ?? false ? _studentName![0].toUpperCase() : '?',
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: primaryColor,
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        dateRange,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(statusIcon, color: statusColor, size: 20),
-                          const SizedBox(width: 8),
                           Text(
-                            statusLabel,
+                            _studentName ?? 'Loading...',
                             style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: statusColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Student ID: ${_matriculeNum ?? 'Loading...'}',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 16,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              }).toList()
-            else
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'No weekly logs available yet.',
-                  style: GoogleFonts.poppins(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
-          ],
+              const SizedBox(height: 12),
+
+              // Internship Details Section
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Color(0xFF1A237E).withOpacity(0.1),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFF1A237E).withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.work_outline,
+                            color: primaryColor,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Internship Details',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      Icons.business,
+                      'Company',
+                      _currentInternship?['company']?.toString() ?? 'Not available',
+                    ),
+                    _buildDetailRow(
+                      Icons.calendar_today,
+                      'Duration',
+                      _getInternshipDatesFormatted(),
+                    ),
+                    _buildDetailRow(
+                      Icons.person,
+                      'Supervisor',
+                      _currentInternship?['supervisor']?['user_name']?.toString() ?? 'Not assigned',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Weekly Progress Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Color(0xFF1A237E).withOpacity(0.1),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFF1A237E).withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.trending_up,
+                            color: primaryColor,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Weekly Progress',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_ongoingLogbook != null && _ongoingLogbook!['weekly_logs'] != null)
+                      ..._ongoingLogbook!['weekly_logs'].map<Widget>((log) {
+                        final status = log['status'] ?? 'pending_approval';
+                        final statusLabel = _getStatusLabel(status);
+                        final statusIcon = _getStatusIcon(status);
+                        final statusColor = _getStatusColor(status);
+                        final weekNumber = log['week_no'] ?? 'Unknown';
+
+                        String dateRange = _getWeekDateRange(log);
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF1A237E).withOpacity(0.03),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Color(0xFF1A237E).withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Week $weekNumber',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: primaryColor,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(statusIcon, color: statusColor, size: 16),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          statusLabel,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: statusColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                dateRange,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Color(0xFF1A237E).withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList()
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Color(0xFF1A237E).withOpacity(0.03),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Color(0xFF1A237E).withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Color(0xFF1A237E).withOpacity(0.6),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'No weekly logs available yet.',
+                              style: GoogleFonts.poppins(
+                                color: Color(0xFF1A237E).withOpacity(0.7),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
