@@ -19,6 +19,17 @@ class DioClient {
         }
         final token = await _storage.read(key: 'access_token');
         if (token != null) options.headers['Authorization'] = 'Bearer $token';
+
+        // Enhanced logging for form data
+        if (options.data != null) {
+          if (options.data is FormData) {
+            print('FormData fields: ${(options.data as FormData).fields.map((e) => '${e.key}: ${e.value}')}');
+            print('FormData files: ${(options.data as FormData).files.map((e) => '${e.key}: ${e.value.filename}')}');
+          } else {
+            print('Data: ${options.data}');
+          }
+        }
+
         return handler.next(options);
       },
       onError: (error, handler) async {
@@ -101,6 +112,14 @@ class DioClient {
       print('Register Error Response: ${e.response?.data}');
       throw e.response?.data ?? {'error': 'Registration failed'};
     }
+  }
+
+  Future<Map<String, dynamic>> _getHeaders() async {
+    final token = await _storage.read(key: 'access_token');
+    return {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
   }
 
   Future<void> login(String email, String password) async {
@@ -279,6 +298,35 @@ class DioClient {
     }
   }
 
+  // Enhanced POST method to handle both regular data and FormData
+  Future<dynamic> post(String path, {dynamic data}) async {
+    try {
+      Options options;
+
+      if (data is FormData) {
+        // For form data (file uploads), let Dio handle the content type
+        options = Options(
+          headers: await _getHeaders(),
+        );
+      } else {
+        // For regular JSON data
+        options = Options(
+          headers: await _getHeaders(),
+          contentType: 'application/json',
+        );
+      }
+
+      final response = await _dio.post(
+        path,
+        data: data,
+        options: options,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      print('POST Error Response: ${e.response?.data}');
+      throw e;
+    }
+  }
 
   Future<void> logout() async {
     try {

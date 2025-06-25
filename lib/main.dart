@@ -172,13 +172,13 @@ class MyApp extends StatelessWidget {
         },
       ),
       // GoRoute(
-      //   path: '/user/log-entry/:id',
+      //   path: '/user/logbook/entry/:id',
       //   builder: (context, state) {
-      //     final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-      //     return LogEntryDetailScreen(entryId: id);
+      //     final entryId = int.parse(state.params['id']!);
+      //     return LogEntryDetailScreen(entryId: entryId); // implement this screen
       //   },
       // ),
-      
+
     ],
     // Handle route errors
     errorBuilder: (context, state) => Scaffold(
