@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:internlog/features/auth/presentation/widgets/bottom_navigation_bar.dart';
-import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:internlog/core/network/dio_client.dart';
 import 'package:image_picker/image_picker.dart';
@@ -138,13 +137,20 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
           : ListView.builder(
         itemCount: _entries.length,
         padding: const EdgeInsets.all(16),
+        // In the ListView.builder's itemBuilder:
         itemBuilder: (context, index) {
           final entry = _entries[index];
           final description = entry['description'] ?? 'No description';
           final feedback = entry['feedback'] ?? '';
+          final hasFeedback = feedback.isNotEmpty;
+
+          // Truncate description to 100 characters max
+          final truncatedDescription = description.length > 100
+              ? '${description.substring(0, 100)}...'
+              : description;
 
           return Container(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: 16),
             child: Material(
               elevation: 2,
               borderRadius: BorderRadius.circular(12),
@@ -154,100 +160,92 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
                 onTap: () {
                   HapticFeedback.lightImpact();
                 },
-                child: Container(
+                child: Padding(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              description,
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: primaryColor,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
+                      // Description with limited lines
+                      Text(
+                        truncatedDescription,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: primaryColor,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const SizedBox(width: 6),
-                        ],
-                      ),
-                      if (feedback.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.blue.withOpacity(0.1),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.feedback_outlined,
-                                size: 16,
-                                color: Colors.blue[700],
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Feedback:',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue[700],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      feedback,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        color: Colors.blue[800],
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+
+                      // Feedback section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: hasFeedback
+                              ? Colors.green.withOpacity(0.05)
+                              : Colors.blue.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: hasFeedback
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.blue.withOpacity(0.1),
                           ),
                         ),
-                      ],
-                      const SizedBox(height: 2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.feedback_outlined,
+                              size: 16,
+                              color: hasFeedback ? Colors.green[700] : Colors.blue[700],
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Feedback:',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: hasFeedback ? Colors.green[700] : Colors.blue[700],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    hasFeedback ? feedback : 'No feedback from supervisor',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      color: hasFeedback ? Colors.green[800] : Colors.blue[800],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // See More button
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
                             context.go('/user/logbook/entry/${entry['id']}');
                           },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           child: Text(
-                            'See More',
+                            'See Full Entry',
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               color: primaryColor,

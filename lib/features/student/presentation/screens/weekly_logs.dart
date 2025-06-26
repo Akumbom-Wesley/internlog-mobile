@@ -299,8 +299,6 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
                                   color: Colors.grey[600],
                                 ),
                               ),
-                              if (log['logbook_entries'] != null &&
-                                  log['logbook_entries'].isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
@@ -321,7 +319,6 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
                                   ],
                                 ),
                               ],
-                            ],
                           ),
                         ),
 
