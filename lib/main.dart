@@ -23,7 +23,6 @@ class MyApp extends StatelessWidget {
 
   final DioClient _dioClient = DioClient();
 
-  // Auth guard to check if user is authenticated
   Future<String?> _authGuard(BuildContext context, GoRouterState state) async {
     try {
       final isLoggedIn = await _dioClient.isLoggedIn();
@@ -31,13 +30,11 @@ class MyApp extends StatelessWidget {
         return '/auth/login';
       }
 
-      // For protected routes, verify token is still valid
       if (_isProtectedRoute(state.matchedLocation)) {
         try {
           await _dioClient.getCurrentUser();
-          return null; // User is authenticated, allow access
+          return null;
         } catch (e) {
-          // Token is invalid, redirect to login
           return '/auth/login';
         }
       }
@@ -48,7 +45,6 @@ class MyApp extends StatelessWidget {
     }
   }
 
-  // Check if route requires authentication
   bool _isProtectedRoute(String route) {
     final protectedRoutes = [
       '/user/dashboard',
@@ -61,16 +57,17 @@ class MyApp extends StatelessWidget {
       '/pending-internships',
       '/settings',
       '/companies',
+      '/user/logbook',
+      '/user/logbook/week',
+      '/user/logbook/entry',
     ];
     return protectedRoutes.any((protectedRoute) => route.startsWith(protectedRoute));
   }
 
-  // Redirect logic for authenticated users trying to access auth pages
   Future<String?> _authRedirect(BuildContext context, GoRouterState state) async {
     try {
       final isLoggedIn = await _dioClient.isLoggedIn();
       if (isLoggedIn && (state.matchedLocation == '/auth/login' || state.matchedLocation == '/auth/register')) {
-        // User is logged in but trying to access login/register, check their role
         try {
           final userData = await _dioClient.getCurrentUser();
           final role = userData['role'];
@@ -80,7 +77,6 @@ class MyApp extends StatelessWidget {
             return '/user/dashboard';
           }
         } catch (e) {
-          // Token invalid, allow access to login/register
           return null;
         }
       }
@@ -93,18 +89,15 @@ class MyApp extends StatelessWidget {
   late final _router = GoRouter(
     initialLocation: '/',
     redirect: (context, state) async {
-      // Handle splash screen separately
       if (state.matchedLocation == '/') {
         return null;
       }
 
-      // Check for auth redirects first
       final authRedirect = await _authRedirect(context, state);
       if (authRedirect != null) {
         return authRedirect;
       }
 
-      // Then check auth guard for protected routes
       return await _authGuard(context, state);
     },
     routes: [
@@ -171,16 +164,14 @@ class MyApp extends StatelessWidget {
           return LogEntriesScreen(weeklyLogId: id);
         },
       ),
-      // GoRoute(
-      //   path: '/user/logbook/entry/:id',
-      //   builder: (context, state) {
-      //     final entryId = int.parse(state.params['id']!);
-      //     return LogEntryDetailScreen(entryId: entryId); // implement this screen
-      //   },
-      // ),
-
+      GoRoute(
+        path: '/user/logbook/entry/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return LogEntryDetailScreen(entryId: id);
+        },
+      ),
     ],
-    // Handle route errors
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: Column(
@@ -225,7 +216,7 @@ class MyApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.light,
       routerConfig: _router,
-      debugShowCheckedModeBanner: false, // Remove debug banner
+      debugShowCheckedModeBanner: false,
     );
   }
 }

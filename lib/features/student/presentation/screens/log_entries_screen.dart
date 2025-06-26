@@ -66,15 +66,6 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
     }
   }
 
-  String _formatDate(String dateTimeString) {
-    try {
-      final dt = DateTime.parse(dateTimeString);
-      return DateFormat('dd MMM, yyyy').format(dt);
-    } catch (_) {
-      return dateTimeString;
-    }
-  }
-
   void _showCreateEntryModal() {
     showModalBottomSheet(
       context: context,
@@ -149,9 +140,7 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
         padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final entry = _entries[index];
-          final createdAt = _formatDate(entry['created_at'] ?? '');
           final description = entry['description'] ?? 'No description';
-          final status = entry['is_immutable'] ? 'approved' : 'pending_approval';
           final feedback = entry['feedback'] ?? '';
 
           return Container(
@@ -186,8 +175,10 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                color: primaryColor,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -196,29 +187,7 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(
-                            Icons.calendar_today,
-                            size: 14,
-                            color: Colors.grey[600],
-                          ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Created: $createdAt',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            status,
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: status == 'approved' ? Colors.green : Colors.orange,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
                         ],
                       ),
                       if (feedback.isNotEmpty) ...[
@@ -260,6 +229,8 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
                                         fontSize: 13,
                                         color: Colors.blue[800],
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -268,6 +239,23 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
                           ),
                         ),
                       ],
+                      const SizedBox(height: 2),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            context.go('/user/logbook/entry/${entry['id']}');
+                          },
+                          child: Text(
+                            'See More',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

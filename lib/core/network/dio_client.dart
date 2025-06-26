@@ -44,7 +44,7 @@ class DioClient {
             final response = await _dio.fetch(error.requestOptions);
             return handler.resolve(response);
           } else {
-            // Refresh failed, clear tokens and redirect to login
+            // Refresh failed, clear tokens
             await _clearTokens();
           }
         }
@@ -171,13 +171,72 @@ class DioClient {
     }
   }
 
-  Future<List<dynamic>> get(String endpoint) async {
+  Future<dynamic> get(String endpoint) async {
     try {
       final response = await _dio.get(endpoint);
+      print('GET Response for $endpoint: ${response.data}');
       return response.data;
     } on DioException catch (e) {
-      print('GET Error Response: ${e.response?.data}');
-      throw e.response?.data['error'] ?? 'Failed to fetch data';
+      print('GET Error for $endpoint: ${e.response?.data}');
+      throw e.response?.data ?? {'error': 'Failed to fetch data'};
+    }
+  }
+
+  Future<dynamic> patch(String path, {dynamic data}) async {
+    try {
+      Options options;
+      if (data is FormData) {
+        // For form data (file uploads), let Dio handle the content type
+        options = Options(
+          headers: await _getHeaders(),
+        );
+      } else {
+        // For regular JSON data
+        options = Options(
+          headers: await _getHeaders(),
+          contentType: 'application/json',
+        );
+      }
+
+      final response = await _dio.patch(
+        path,
+        data: data,
+        options: options,
+      );
+      print('PATCH Response for $path: ${response.data}');
+      return response.data;
+    } on DioException catch (e) {
+      print('PATCH Error Response for $path: ${e.response?.data}');
+      throw e;
+    }
+  }
+
+  Future<dynamic> post(String path, {dynamic data}) async {
+    try {
+      Options options;
+      if (data is FormData) {
+        // For form data (file uploads), let Dio handle the content type
+        options = Options(
+          headers: await _getHeaders(),
+        );
+      } else {
+        // For regular JSON data
+        options = Options(
+          headers: await _getHeaders(),
+          contentType: 'application/json',
+        );
+      }
+
+      final response = await _dio.post(
+        path,
+        data: data,
+        options: options,
+      );
+      print('POST Response for $path: ${response.data}');
+      return response.data;
+    } on DioException catch (e) {
+      print('POST Error Response: ${e.response?.data}');
+      throw e;
     }
   }
 
@@ -219,7 +278,6 @@ class DioClient {
       }
 
       throw 'Unexpected response format';
-
     } on DioException catch (e) {
       print('Get Internships Error Response: ${e.response?.data}');
       throw e.response?.data['error'] ?? 'Failed to fetch internships';
@@ -295,36 +353,6 @@ class DioClient {
     } on DioException catch (e) {
       print('Create Weekly Log Error: ${e.response?.data}');
       throw e.response?.data['error'] ?? 'Failed to create weekly log';
-    }
-  }
-
-  // Enhanced POST method to handle both regular data and FormData
-  Future<dynamic> post(String path, {dynamic data}) async {
-    try {
-      Options options;
-
-      if (data is FormData) {
-        // For form data (file uploads), let Dio handle the content type
-        options = Options(
-          headers: await _getHeaders(),
-        );
-      } else {
-        // For regular JSON data
-        options = Options(
-          headers: await _getHeaders(),
-          contentType: 'application/json',
-        );
-      }
-
-      final response = await _dio.post(
-        path,
-        data: data,
-        options: options,
-      );
-      return response.data;
-    } on DioException catch (e) {
-      print('POST Error Response: ${e.response?.data}');
-      throw e;
     }
   }
 
