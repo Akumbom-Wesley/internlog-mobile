@@ -135,39 +135,51 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(gradient: AppDecorations.backgroundGradient),
-        child: Padding(
+        child: SingleChildScrollView( // Add this to handle overflow
           padding: const EdgeInsets.all(AppConstants.itemPadding),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center, // Center content horizontally
             children: [
               Text(
                 'Available Downloads',
                 style: AppTypography.headline,
+                textAlign: TextAlign.center, // Center the text
               ),
               const SizedBox(height: 8),
               Text(
                 'Download your documents and reports',
                 style: AppTypography.subtitle.copyWith(color: Colors.grey[600]),
+                textAlign: TextAlign.center, // Center the text
               ),
               const SizedBox(height: AppConstants.sectionSpacing),
-              _buildDownloadCard(
-                title: 'Download Logbook',
-                description: 'Download your complete logbook in PDF format with all your daily activities and progress',
-                icon: Icons.book,
-                primaryColor: primaryColor,
-                fileUrl: '${_baseUrl}/api/logbooks/download/',
-                fileNamePrefix: 'logbook',
-                fileExtension: 'pdf',
+              ConstrainedBox( // Constrain card width
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                ),
+                child: _buildDownloadCard(
+                  title: 'Download Logbook',
+                  description: 'Download your complete logbook in PDF format with all your daily activities and progress',
+                  icon: Icons.book,
+                  primaryColor: primaryColor,
+                  fileUrl: '${_baseUrl}/api/logbooks/download/',
+                  fileNamePrefix: 'logbook',
+                  fileExtension: 'pdf',
+                ),
               ),
               const SizedBox(height: AppConstants.itemSpacing),
-              _buildDownloadCard(
-                title: 'Download Internship Report',
-                description: 'Generate and download your official internship report in DOCX format',
-                icon: Icons.assignment,
-                primaryColor: primaryColor,
-                fileUrl: '${_baseUrl}/api/internships/',
-                fileNamePrefix: 'internship_report',
-                fileExtension: 'docx',
+              ConstrainedBox( // Constrain card width
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                ),
+                child: _buildDownloadCard(
+                  title: 'Download Internship Report',
+                  description: 'Generate and download your official internship report in DOCX format',
+                  icon: Icons.assignment,
+                  primaryColor: primaryColor,
+                  fileUrl: '${_baseUrl}/api/internships/',
+                  fileNamePrefix: 'internship_report',
+                  fileExtension: 'docx',
+                ),
               ),
             ],
           ),
@@ -199,87 +211,89 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
         decoration: AppDecorations.card,
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.cardPadding),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppConstants.iconPadding),
-                decoration: AppDecorations.iconContainer,
-                child: Icon(
-                  icon,
-                  size: AppConstants.iconSizeLarge,
-                  color: primaryColor,
-                ),
-              ),
-              const SizedBox(height: AppConstants.itemSpacing),
-              Text(
-                title,
-                style: AppTypography.headline,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: AppTypography.subtitle.copyWith(color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppConstants.sectionSpacing),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isDownloading
-                      ? null
-                      : () async {
-                    try {
-                      final internship = await _dioClient.getOngoingInternship();
-                      final internshipId = internship['id'].toString();
-                      await _downloadFile(
-                        context: context,
-                        url: '$fileUrl$internshipId${fileExtension == 'pdf' ? '' : '/generate-report/'}',
-                        fileName: '$fileNamePrefix$internshipId.$fileExtension',
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: ${e.toString()}', style: AppTypography.body),
-                          backgroundColor: AppColors.error,
-                        ),
-                      );
-                    }
-                  },
-                  style: AppWidgetStyles.elevatedButton,
-                  child: _isDownloading
-                      ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: AppConstants.itemSpacing),
-                      Text(
-                        fileExtension == 'pdf' ? 'Downloading...' : 'Generating...',
-                        style: AppTypography.button,
-                      ),
-                    ],
-                  )
-                      : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(fileExtension == 'pdf' ? Icons.download : Icons.file_download, color: Colors.white),
-                      const SizedBox(width: 8),
-                      Text(
-                        fileExtension == 'pdf' ? 'Download PDF' : 'Download Report',
-                        style: AppTypography.button,
-                      ),
-                    ],
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppConstants.iconPadding),
+                  decoration: AppDecorations.iconContainer,
+                  child: Icon(
+                    icon,
+                    size: AppConstants.iconSizeLarge,
+                    color: primaryColor,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppConstants.itemSpacing),
+                Text(
+                  title,
+                  style: AppTypography.headline,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: AppTypography.subtitle.copyWith(color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppConstants.sectionSpacing),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isDownloading
+                        ? null
+                        : () async {
+                      try {
+                        final internship = await _dioClient.getOngoingInternship();
+                        final internshipId = internship['id'].toString();
+                        await _downloadFile(
+                          context: context,
+                          url: '$fileUrl$internshipId${fileExtension == 'pdf' ? '' : '/generate-report/'}',
+                          fileName: '$fileNamePrefix$internshipId.$fileExtension',
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.toString()}', style: AppTypography.body),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    },
+                    style: AppWidgetStyles.elevatedButton,
+                    child: _isDownloading
+                        ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: AppConstants.itemSpacing),
+                        Text(
+                          fileExtension == 'pdf' ? 'Downloading...' : 'Generating...',
+                          style: AppTypography.button,
+                        ),
+                      ],
+                    )
+                        : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(fileExtension == 'pdf' ? Icons.download : Icons.file_download, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          fileExtension == 'pdf' ? 'Download PDF' : 'Download Report',
+                          style: AppTypography.button,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
