@@ -109,6 +109,35 @@ class WeeklyLogsWidgets {
     );
   }
 
+  static Widget buildEmptyState() {
+    return Center(
+      child: Container(
+        decoration: AppDecorations.card,
+        padding: const EdgeInsets.all(AppConstants.cardPadding),
+        margin: const EdgeInsets.symmetric(horizontal: AppConstants.sectionSpacing),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.assignment_outlined,
+              size: AppConstants.iconSizeLarge,
+              color: AppColors.primary.shade500,
+            ),
+            const SizedBox(height: AppConstants.itemSpacing),
+            Text(
+              'No weekly logs available yet.\nTap the + button to create one.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body.copyWith(
+                color: AppColors.primary.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Widget _buildStatusWidget(String status) {
     final statusConfig = {
       'approved': {

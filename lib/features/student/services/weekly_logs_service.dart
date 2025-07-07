@@ -17,6 +17,20 @@ class WeeklyLogsService {
     };
   }
 
+  Future<void> createWeeklyLog(int logbookId) async {
+    try {
+      final response = await _dioClient.post(
+        'api/weekly-logs/$logbookId/create/',
+        data: {}, // Send empty data since no payload is required
+      );
+      return response;
+    } catch (e) {
+      debugPrint('Error creating weekly log: $e');
+      rethrow;
+    }
+  }
+
+
   String formatDateRange(DateTime? startDate) {
     if (startDate == null) return 'Date range not available';
     final endDate = startDate.add(const Duration(days: 4));

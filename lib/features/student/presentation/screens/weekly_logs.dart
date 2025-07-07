@@ -5,9 +5,7 @@ import 'package:internlog/core/theme/colors.dart';
 import 'package:internlog/core/theme/constants.dart';
 import 'package:internlog/core/theme/decorations.dart';
 import 'package:internlog/core/theme/typography.dart';
-import 'package:internlog/core/theme/widget_styles.dart';
 import 'package:internlog/features/auth/presentation/widgets/bottom_navigation_bar.dart';
-
 
 import '../../services/weekly_logs_service.dart';
 import '../../widgets/weekly_logs_widgets.dart';
@@ -45,7 +43,7 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Error fetching logs: $e',
+              'Error fetching logs: ${e.toString()}',
               style: AppTypography.caption,
             ),
             backgroundColor: AppColors.error.withOpacity(0.1),
@@ -58,18 +56,36 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
   }
 
   Future<void> _createWeeklyLog() async {
-    if (_logbookId == null) return;
-    try {
-      await DioClient().createWeeklyLog(_logbookId!);
-      await _fetchWeeklyLogs();
+    if (_logbookId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Weekly log created successfully',
+              'No active internship found',
               style: AppTypography.caption,
             ),
-            backgroundColor: AppColors.success.withOpacity(0.1),
+            backgroundColor: AppColors.error,
+            
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _service.createWeeklyLog(_logbookId!);
+      await _fetchWeeklyLogs();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Week ${_weeklyLogs.length} created successfully',
+              style: AppTypography.caption,
+            ),
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -78,12 +94,16 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Failed to create weekly log: $e',
+              'Failed to create weekly log: ${e.toString()}',
               style: AppTypography.caption,
             ),
-            backgroundColor: AppColors.error.withOpacity(0.1),
+            backgroundColor: AppColors.error,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -100,70 +120,46 @@ class _WeeklyLogsScreenState extends State<WeeklyLogsScreen> {
         appBar: AppBar(
           title: Text(
             'Weekly Logs',
-            style: AppTypography.headerTitle,
+            style: AppTypography.headerTitle.copyWith(color: Colors.white),
           ),
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/user/dashboard'),
           ),
-          actions: const [SizedBox(width: AppConstants.iconSizeMedium)],
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          shadowColor: AppColors.primary.withOpacity(0.2),
         ),
-        floatingActionButton: _logbookId != null
-            ? FloatingActionButton(
+        floatingActionButton: FloatingActionButton(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           child: const Icon(Icons.add),
           onPressed: _createWeeklyLog,
-        )
-            : null,
+          tooltip: 'Create new weekly log',
+        ),
         body: _isLoading
-            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : _weeklyLogs.isEmpty
-            ? Center(
-          child: Container(
-            decoration: AppDecorations.card,
-            padding: const EdgeInsets.all(AppConstants.cardPadding),
-            margin: const EdgeInsets.symmetric(horizontal: AppConstants.sectionSpacing),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.assignment_outlined,
-                  size: AppConstants.iconSizeLarge,
-                  color: AppColors.primary.shade500,
-                ),
-                const SizedBox(height: AppConstants.itemSpacing),
-                Text(
-                  'No weekly logs available yet.\nTap the + button to create one.',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.body.copyWith(
-                    color: AppColors.primary.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+            ? WeeklyLogsWidgets.buildEmptyState()
+            : RefreshIndicator(
+          onRefresh: _fetchWeeklyLogs,
+          color: AppColors.primary,
+          child: ListView.builder(
+            itemCount: _weeklyLogs.length,
+            padding: const EdgeInsets.all(AppConstants.sectionSpacing),
+            itemBuilder: (context, index) {
+              final log = _weeklyLogs[index];
+              return WeeklyLogsWidgets.buildLogCard(
+                log: log,
+                internshipStartDate: _service.internshipStartDate,
+                onTap: () {
+                  final weekId = log['id']?.toString() ?? '0';
+                  context.push('/user/logbook/week/$weekId');
+                },
+              );
+            },
           ),
-        )
-            : ListView.builder(
-          itemCount: _weeklyLogs.length,
-          padding: const EdgeInsets.all(AppConstants.sectionSpacing),
-          itemBuilder: (context, index) {
-            final log = _weeklyLogs[index];
-            return WeeklyLogsWidgets.buildLogCard(
-              log: log,
-              internshipStartDate: _service.internshipStartDate,
-              onTap: () {
-                final weekId = log['id']?.toString() ?? '0';
-                context.push('/user/logbook/week/$weekId');
-              },
-            );
-          },
         ),
         bottomNavigationBar: BottomNavBar(
           role: widget.role ?? 'student',
