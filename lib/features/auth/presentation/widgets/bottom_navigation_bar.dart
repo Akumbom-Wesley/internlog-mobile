@@ -1,4 +1,3 @@
-// lib/features/user/presentation/widgets/bottom_navigation_bar.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +20,10 @@ class BottomNavBar extends StatelessWidget {
       BottomNavigationBarItem(
         icon: Icon(Icons.book),
         label: 'Logbook',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.download),
+        label: 'Downloads',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.person),
@@ -65,6 +68,11 @@ class BottomNavBar extends StatelessWidget {
               break;
             case 2:
               if (currentIndex != 2) {
+                context.go('/user/downloads');
+              }
+              break;
+            case 3:
+              if (currentIndex != 3) {
                 context.go('/user/profile');
               }
               break;

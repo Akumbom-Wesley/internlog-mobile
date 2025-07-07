@@ -5,10 +5,12 @@ class DioClient {
   final Dio _dio = Dio();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
+  Map<String, dynamic>? _currentUser;
+
   FlutterSecureStorage get storage => _storage;
 
   DioClient() {
-    _dio.options.baseUrl = 'http://10.140.91.152:8000/';
+    _dio.options.baseUrl = 'http://10.111.147.152:8000/';
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -45,7 +47,7 @@ class DioClient {
             return handler.resolve(response);
           } else {
             // Refresh failed, clear tokens
-            await _clearTokens();
+            await clearTokens();
           }
         }
         return handler.next(error);
@@ -76,9 +78,17 @@ class DioClient {
     }
   }
 
-  Future<void> _clearTokens() async {
-    await _storage.delete(key: 'access_token');
-    await _storage.delete(key: 'refresh_token');
+// Add this to your DioClient class in dio_client.dart
+  Future<void> clearTokens() async {
+    try {
+      await _storage.delete(key: 'access_token');
+      await _storage.delete(key: 'refresh_token');
+      _dio.options.headers.remove('Authorization');
+      _currentUser = null; // Clear cached user
+      print('All tokens and user data cleared successfully');
+    } catch (e) {
+      print('Error clearing tokens: $e');
+    }
   }
 
   Future<bool> isLoggedIn() async {
@@ -147,7 +157,7 @@ class DioClient {
         final status = userData['supervisor']['status'];
         if (status == 'pending' || status == 'rejected') {
           // Clear token to prevent unauthorized access
-          await _clearTokens();
+          await clearTokens();
           throw Exception(
               'The company is yet to approve your status as a supervisor from that company.');
         }
@@ -161,10 +171,36 @@ class DioClient {
     }
   }
 
+  Future<Map<String, dynamic>> getUserById(int userId) async {
+    try {
+      final response = await _dio.get('api/users/$userId');
+      return response.data;
+    } on DioException catch (e) {
+      print('Get User Error Response: ${e.response?.data}');
+      throw e.response?.data['error'] ?? 'Failed to fetch user data';
+    }
+  }
+
+  Future<int?> getCurrentUserId() async {
+    try {
+      if (_currentUser != null) return _currentUser!['id'] as int?;
+
+      final response = await _dio.get('api/auth/me');
+      _currentUser = response.data;
+      return _currentUser!['id'] as int?;
+    } on DioException catch (e) {
+      print('Get Current User ID Error: ${e.response?.data}');
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> getCurrentUser() async {
+    if (_currentUser != null) return _currentUser!;
+
     try {
       final response = await _dio.get('api/auth/me');
-      return response.data;
+      _currentUser = response.data;
+      return _currentUser!;
     } on DioException catch (e) {
       print('Current User Error Response: ${e.response?.data}');
       throw e.response?.data['error'] ?? 'Failed to get user data';
@@ -356,13 +392,45 @@ class DioClient {
     }
   }
 
-  Future<void> logout() async {
+  Future<String?> logout(String refreshToken) async {
     try {
-      await _dio.post('api/auth/logout/');
+      final response = await _dio.post(
+        'api/auth/logout/',
+        data: {'refresh': refreshToken},
+      );
+
+      // Success case
+      if (response.statusCode == 205) {
+        return null; // No error, logout successful
+      }
+
+      // Handle unexpected status codes
+      return 'Logout failed. Please try again.';
+    } on DioException catch (e) {
+      // Handle Dio-specific errors
+      if (e.response != null) {
+        final data = e.response?.data;
+        if (data is Map && data.containsKey('error')) {
+          return data['error'] as String;
+        }
+
+        switch (e.response?.statusCode) {
+          case 400:
+            return 'Invalid session. Please login again.';
+          case 401:
+            return 'Session expired. Please login again.';
+          case 500:
+            return 'Server error. Please try again later.';
+          default:
+            return 'Logout failed. Please try again.';
+        }
+      } else {
+        return 'Network error. Please check your connection.';
+      }
     } catch (e) {
-      print('Logout Error: $e');
+      return 'An unexpected error occurred. Please try again.';
     } finally {
-      await _clearTokens();
+      await clearTokens(); // Always clear local tokens
     }
   }
 }

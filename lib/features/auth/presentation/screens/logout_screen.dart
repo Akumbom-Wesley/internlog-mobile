@@ -9,13 +9,45 @@ class LogoutScreen extends StatelessWidget {
 
   Future<void> _logout(BuildContext context) async {
     final dioClient = DioClient();
+    final storage = FlutterSecureStorage();
+    final refreshToken = await storage.read(key: 'refresh_token'); // Note: changed from 'refreshToken' to 'refresh_token'
+
     try {
-      await dioClient.logout(); // Clears token in flutter_secure_storage
-      context.go('/auth/login');
+      String? errorMessage;
+
+      // Only attempt API logout if we have a refresh token
+      if (refreshToken != null) {
+        errorMessage = await dioClient.logout(refreshToken);
+      } else {
+        // If no refresh token, just proceed with local cleanup
+        await dioClient.clearTokens();
+      }
+
+      if (context.mounted) {
+        // Show error message if any
+        if (errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+
+        // Always redirect to login page
+        context.go('/auth/login');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logout failed: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An unexpected error occurred during logout'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      // Ensure tokens are cleared even if something went wrong
+      await dioClient.clearTokens();
     }
   }
 

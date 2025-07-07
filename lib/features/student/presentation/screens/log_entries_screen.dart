@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:internlog/features/auth/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:internlog/core/network/dio_client.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
+import '../../../../core/theme/colors.dart';
+import '../../../../core/theme/constants.dart';
+import '../../../../core/theme/decorations.dart';
+import '../../../../core/theme/typography.dart';
+import '../../../../core/theme/widget_styles.dart';
+import '../../../auth/presentation/widgets/bottom_navigation_bar.dart';
 
 class LogEntriesScreen extends StatefulWidget {
   final int weeklyLogId;
@@ -53,11 +57,11 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
         SnackBar(
           content: Text(
             'Error loading entries: $e',
-            style: GoogleFonts.poppins(color: Colors.white),
+            style: AppTypography.body.copyWith(color: Colors.white),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall)),
         ),
       );
     } finally {
@@ -72,9 +76,7 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
       backgroundColor: Colors.transparent,
       builder: (context) => CreateEntryModal(
         weeklyLogId: widget.weeklyLogId,
-        onEntryCreated: () {
-          _fetchEntries();
-        },
+        onEntryCreated: _fetchEntries,
       ),
     );
   }
@@ -86,181 +88,157 @@ class _LogEntriesScreenState extends State<LogEntriesScreen> with TickerProvider
 
     return Scaffold(
       appBar: AppBar(
-        title: Center(
-          child: Text(
-            'Log Entries',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              color: primaryColor,
-            ),
-          ),
+        title: Text(
+          'Log Entries',
+          style: AppTypography.headerTitle.copyWith(color: primaryColor),
         ),
+        centerTitle: true,
         leading: BackButton(onPressed: () => context.pop()),
         actions: const [SizedBox(width: 48)],
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _entries.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.note_alt_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No log entries found.',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+      body: Container(
+        decoration: BoxDecoration(gradient: AppDecorations.backgroundGradient),
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : _entries.isEmpty
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.note_alt_outlined,
+                size: AppConstants.iconSizeLarge,
+                color: Colors.grey[400],
               ),
-            ),
-            if (isStudent) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppConstants.itemSpacing),
               Text(
-                'Tap the + button to create your first entry',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: Colors.grey[500],
+                'No log entries found.',
+                style: AppTypography.body.copyWith(
+                  fontSize: 18,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+              if (isStudent) ...[
+                const SizedBox(height: AppConstants.itemSpacing),
+                Text(
+                  'Tap the + button to create your first entry',
+                  style: AppTypography.subtitle.copyWith(color: Colors.grey[500]),
+                ),
+              ],
             ],
-          ],
-        ),
-      )
-          : ListView.builder(
-        itemCount: _entries.length,
-        padding: const EdgeInsets.all(16),
-        // In the ListView.builder's itemBuilder:
-        itemBuilder: (context, index) {
-          final entry = _entries[index];
-          final description = entry['description'] ?? 'No description';
-          final feedback = entry['feedback'] ?? '';
-          final hasFeedback = feedback.isNotEmpty;
+          ),
+        )
+            : ListView.builder(
+          itemCount: _entries.length,
+          padding: const EdgeInsets.all(AppConstants.itemPadding),
+          itemBuilder: (context, index) {
+            final entry = _entries[index];
+            final description = entry['description'] ?? 'No description';
+            final feedback = entry['feedback'] ?? '';
+            final hasFeedback = feedback.isNotEmpty;
 
-          // Truncate description to 100 characters max
-          final truncatedDescription = description.length > 100
-              ? '${description.substring(0, 100)}...'
-              : description;
+            final truncatedDescription = description.length > 100
+                ? '${description.substring(0, 100)}...'
+                : description;
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Material(
-              elevation: 2,
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Description with limited lines
-                      Text(
-                        truncatedDescription,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: primaryColor,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Feedback section
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: hasFeedback
-                              ? Colors.green.withOpacity(0.05)
-                              : Colors.blue.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: hasFeedback
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.blue.withOpacity(0.1),
+            return Container(
+              margin: const EdgeInsets.only(bottom: AppConstants.itemSpacing),
+              child: Material(
+                elevation: 2,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                color: Colors.white,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppConstants.itemPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          truncatedDescription,
+                          style: AppTypography.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: primaryColor,
                           ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.feedback_outlined,
-                              size: 16,
-                              color: hasFeedback ? Colors.green[700] : Colors.blue[700],
+                        const SizedBox(height: AppConstants.itemSpacing),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppConstants.itemPadding),
+                          decoration: AppDecorations.itemCard.copyWith(
+                            color: hasFeedback ? AppColors.approved.withOpacity(0.05) : AppColors.primary.withOpacity(0.05),
+                            border: Border.all(
+                              color: hasFeedback ? AppColors.approved.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Feedback:',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: hasFeedback ? Colors.green[700] : Colors.blue[700],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    hasFeedback ? feedback : 'No feedback from supervisor',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      color: hasFeedback ? Colors.green[800] : Colors.blue[800],
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.feedback_outlined,
+                                size: 16,
+                                color: hasFeedback ? AppColors.approved : AppColors.primary,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // See More button
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            context.go('/user/logbook/entry/${entry['id']}');
-                          },
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Feedback:',
+                                      style: AppTypography.subtitle.copyWith(
+                                        color: hasFeedback ? AppColors.approved : AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      hasFeedback ? feedback : 'No feedback from supervisor',
+                                      style: AppTypography.body.copyWith(
+                                        color: hasFeedback ? AppColors.approved.shade800 : AppColors.primary.shade800,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            'See Full Entry',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: primaryColor,
-                              fontWeight: FontWeight.w600,
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              context.go('/user/logbook/entry/${entry['id']}');
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'See Full Entry',
+                              style: AppTypography.button.copyWith(color: primaryColor),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
       floatingActionButton: isStudent
           ? FloatingActionButton(
@@ -388,14 +366,14 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
           SnackBar(
             content: Text(
               'Log entry created successfully!',
-              style: GoogleFonts.poppins(
+              style: AppTypography.body.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.approved,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall)),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -444,32 +422,28 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppConstants.borderRadiusLarge)),
       ),
       child: Column(
         children: [
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
+            margin: const EdgeInsets.symmetric(vertical: AppConstants.itemSpacing),
             decoration: BoxDecoration(
               color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: AppConstants.itemPadding),
             child: Row(
               children: [
                 Text(
                   'Create New Entry',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                  style: AppTypography.headline,
                 ),
                 const Spacer(),
                 IconButton(
@@ -482,7 +456,7 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
           const Divider(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppConstants.itemPadding),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -490,33 +464,16 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                   children: [
                     Text(
                       'Description *',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
+                      style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppConstants.itemSpacing),
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 4,
                       maxLength: 1000,
-                      decoration: InputDecoration(
+                      decoration: AppWidgetStyles.inputDecoration.copyWith(
                         hintText: 'Enter your log entry description...',
-                        hintStyle: GoogleFonts.poppins(color: Colors.grey[500]),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: primaryColor,
-                            width: 2,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
+                        hintStyle: AppTypography.subtitle.copyWith(color: Colors.grey[500]),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -527,57 +484,40 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                         }
                         return null;
                       },
+                      style: AppTypography.body,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppConstants.sectionSpacing),
                     Text(
                       'Photos (Optional)',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
+                      style: AppTypography.subtitle.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppConstants.itemSpacing),
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: _pickImages,
                             icon: const Icon(Icons.photo_library),
-                            label: const Text('Gallery'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                            label: Text('Gallery', style: AppTypography.button),
+                            style: AppWidgetStyles.outlinedButton,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppConstants.itemSpacing),
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: _takePhoto,
                             icon: const Icon(Icons.camera_alt),
-                            label: const Text('Camera'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                            label: Text('Camera', style: AppTypography.button),
+                            style: AppWidgetStyles.outlinedButton,
                           ),
                         ),
                       ],
                     ),
                     if (_selectedImages.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppConstants.itemSpacing),
                       Text(
                         'Selected Images (${_selectedImages.length})',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
-                        ),
+                        style: AppTypography.subtitle.copyWith(color: Colors.grey[700]),
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -587,11 +527,11 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                           itemCount: _selectedImages.length,
                           itemBuilder: (context, index) {
                             return Container(
-                              margin: const EdgeInsets.only(right: 8),
+                              margin: const EdgeInsets.only(right: AppConstants.itemSpacing),
                               child: Stack(
                                 children: [
                                   ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                                     child: Image.file(
                                       _selectedImages[index],
                                       width: 100,
@@ -606,8 +546,8 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                                       onTap: () => _removeImage(index),
                                       child: Container(
                                         padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.error,
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Icon(
@@ -626,24 +566,19 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                       ),
                     ],
                     if (_errorMessage != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppConstants.itemSpacing),
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.withOpacity(0.3)),
-                        ),
+                        padding: const EdgeInsets.all(AppConstants.itemPadding),
+                        decoration: AppDecorations.errorContainer,
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                            Icon(Icons.error_outline, color: AppColors.error, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _errorMessage!,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: Colors.red[800],
+                                style: AppTypography.body.copyWith(
+                                  color: AppColors.error,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -652,20 +587,12 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppConstants.sectionSpacing),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _submitEntry,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
+                        style: AppWidgetStyles.elevatedButton,
                         child: _isSubmitting
                             ? const SizedBox(
                           height: 20,
@@ -677,10 +604,7 @@ class _CreateEntryModalState extends State<CreateEntryModal> {
                         )
                             : Text(
                           'Create Entry',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTypography.button,
                         ),
                       ),
                     ),

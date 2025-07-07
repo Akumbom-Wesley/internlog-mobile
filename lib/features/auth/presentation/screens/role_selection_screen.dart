@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:internlog/core/network/dio_client.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/theme/colors.dart';
+import '../../../../core/theme/constants.dart';
+import '../../../../core/theme/typography.dart';
+import '../../../../core/theme/widget_styles.dart';
 import '../widgets/role_card.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -15,12 +18,12 @@ class RoleSelectionScreen extends StatefulWidget {
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   final DioClient _dioClient = DioClient();
   final _studentForm = FormGroup({
-    'matriculeNum': FormControl<String>(value: null), // Nullable by default
-    'departmentId': FormControl<int>(value: null), // Nullable by default
+    'matriculeNum': FormControl<String>(value: null),
+    'departmentId': FormControl<int>(value: null),
   });
 
   final _supervisorForm = FormGroup({
-    'companyId': FormControl<int>(value: null), // Nullable by default
+    'companyId': FormControl<int>(value: null),
   });
 
   String? _selectedRole;
@@ -53,12 +56,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error', style: TextStyle(color: Colors.red)),
-        content: Text(message, style: const TextStyle(color: Colors.red)),
+        title: Text('Error', style: AppTypography.headline.copyWith(color: AppColors.error)),
+        content: Text(message, style: AppTypography.body.copyWith(color: AppColors.error)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text('OK', style: AppTypography.button),
           ),
         ],
       ),
@@ -78,7 +81,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : SingleChildScrollView(
               padding: EdgeInsets.all(constraints.maxWidth * 0.05),
               child: Column(
@@ -87,20 +90,17 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   Center(
                     child: Text(
                       'Select Your Role',
-                      style: GoogleFonts.poppins(
+                      style: AppTypography.headline.copyWith(
                         fontSize: constraints.maxWidth * 0.08,
-                        fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Student Role Card
+                  const SizedBox(height: AppConstants.sectionSpacing * 1.5),
                   RoleCard(
                     title: 'Student',
                     isSelected: _selectedRole == 'student',
-                    leadingIcon: const Icon(Icons.school, size: 40, color: Colors.blue),
+                    leadingIcon: Icon(Icons.school, size: 40, color: AppColors.info),
                     content: Column(
                       children: [
                         ReactiveForm(
@@ -109,47 +109,41 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             children: [
                               ReactiveTextField(
                                 formControlName: 'matriculeNum',
-                                decoration: InputDecoration(
+                                decoration: AppWidgetStyles.inputDecoration.copyWith(
                                   labelText: 'Matricule Number',
-                                  labelStyle: GoogleFonts.poppins(),
-                                  border: const OutlineInputBorder(),
                                   hintText: 'UBa25E0001',
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: AppConstants.itemSpacing),
                               ReactiveDropdownField<int>(
                                 formControlName: 'departmentId',
                                 items: [
-                                  const DropdownMenuItem<int>(
+                                  DropdownMenuItem<int>(
                                     value: null,
-                                    child: Text('Select Department'),
+                                    child: Text('Select Department', style: AppTypography.body),
                                   ),
                                   ..._departments.map((dept) {
                                     return DropdownMenuItem<int>(
                                       value: dept['id'],
-                                      child: Text('${dept['name']} - ${dept['school']['name']}'),
+                                      child: Text('${dept['name']} - ${dept['school']['name']}',
+                                          style: AppTypography.body),
                                     );
                                   }),
                                 ],
-                                decoration: InputDecoration(
+                                decoration: AppWidgetStyles.inputDecoration.copyWith(
                                   labelText: 'Department',
-                                  labelStyle: GoogleFonts.poppins(),
-                                  border: const OutlineInputBorder(),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         if (_selectedRole == 'student') ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppConstants.sectionSpacing),
                           TextButton(
                             onPressed: _resetForms,
                             child: Text(
                               'Cancel Student Selection',
-                              style: GoogleFonts.poppins(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTypography.button.copyWith(color: AppColors.error),
                             ),
                           ),
                         ],
@@ -162,13 +156,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       });
                     },
                   ),
-                  const SizedBox(height: 20),
-
-                  // Supervisor Role Card
+                  const SizedBox(height: AppConstants.sectionSpacing),
                   RoleCard(
                     title: 'Supervisor',
                     isSelected: _selectedRole == 'supervisor',
-                    leadingIcon: const Icon(Icons.business, size: 40, color: Colors.green),
+                    leadingIcon: Icon(Icons.business, size: 40, color: AppColors.success),
                     content: Column(
                       children: [
                         ReactiveForm(
@@ -176,34 +168,29 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           child: ReactiveDropdownField<int>(
                             formControlName: 'companyId',
                             items: [
-                              const DropdownMenuItem<int>(
+                              DropdownMenuItem<int>(
                                 value: null,
-                                child: Text('Select Company'),
+                                child: Text('Select Company', style: AppTypography.body),
                               ),
                               ..._companies.map((company) {
                                 return DropdownMenuItem<int>(
                                   value: company['id'],
-                                  child: Text(company['name']),
+                                  child: Text(company['name'], style: AppTypography.body),
                                 );
                               }),
                             ],
-                            decoration: InputDecoration(
+                            decoration: AppWidgetStyles.inputDecoration.copyWith(
                               labelText: 'Company',
-                              labelStyle: GoogleFonts.poppins(),
-                              border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
                         if (_selectedRole == 'supervisor') ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppConstants.sectionSpacing),
                           TextButton(
                             onPressed: _resetForms,
                             child: Text(
                               'Cancel Supervisor Selection',
-                              style: GoogleFonts.poppins(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTypography.button.copyWith(color: AppColors.error),
                             ),
                           ),
                         ],
@@ -216,9 +203,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       });
                     },
                   ),
-                  const SizedBox(height: 40),
-
-                  // Centralized OK Button
+                  const SizedBox(height: AppConstants.sectionSpacing * 2.5),
                   Center(
                     child: SizedBox(
                       width: constraints.maxWidth * 0.6,
@@ -247,19 +232,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             _showErrorDialog('Role selection failed: $e');
                           }
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        style: AppWidgetStyles.elevatedButton.copyWith(
+                          padding: WidgetStateProperty.all(
+                            const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                            ),
                           ),
                         ),
                         child: Text(
                           'CONFIRM ROLE',
-                          style: GoogleFonts.poppins(
+                          style: AppTypography.button.copyWith(
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
                           ),
                         ),
                       ),

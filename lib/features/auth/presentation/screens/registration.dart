@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:internlog/core/network/dio_client.dart';
+import '../../../../core/network/dio_client.dart';
+import '../../../../core/theme/colors.dart';
+import '../../../../core/theme/constants.dart';
+import '../../../../core/theme/decorations.dart';
+import '../../../../core/theme/typography.dart';
+import '../../../../core/theme/widget_styles.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -32,12 +36,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error', style: TextStyle(color: Colors.red)),
-        content: Text(message, style: const TextStyle(color: Colors.red)),
+        title: Text('Error', style: AppTypography.headline.copyWith(color: AppColors.error)),
+        content: Text(message, style: AppTypography.body.copyWith(color: AppColors.error)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text('OK', style: AppTypography.button),
           ),
         ],
       ),
@@ -58,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           confirmPassword: _form.control('confirm_password').value as String,
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful!')),
+          SnackBar(content: Text('Registration successful!', style: AppTypography.body)),
         );
         context.go('/auth/login');
       } catch (e) {
@@ -92,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
-        SystemNavigator.pop(); // Close the app
+        SystemNavigator.pop();
       },
       child: Scaffold(
         body: SafeArea(
@@ -107,30 +111,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.app_registration,
                         size: 60,
-                        color: Color(0xFF1A237E),
+                        color: AppColors.primary,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppConstants.itemSpacing),
                       Text(
                         'InternLog',
-                        style: GoogleFonts.poppins(
+                        style: AppTypography.headline.copyWith(
                           fontSize: 24,
-                          fontWeight: FontWeight.bold,
                           color: primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppConstants.sectionSpacing),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 400),
                         child: Card(
                           elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: AppDecorations.cardShape,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppConstants.cardPadding,
+                              vertical: AppConstants.cardPadding,
+                            ),
                             child: ReactiveForm(
                               formGroup: _form,
                               child: Column(
@@ -138,55 +142,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 children: [
                                   Text(
                                     'Register',
-                                    style: GoogleFonts.poppins(
+                                    style: AppTypography.headline.copyWith(
                                       fontSize: 24,
-                                      fontWeight: FontWeight.bold,
                                       color: primaryColor,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppConstants.sectionSpacing),
                                   ReactiveTextField(
                                     formControlName: 'full_name',
-                                    decoration: InputDecoration(
+                                    decoration: AppWidgetStyles.inputDecoration.copyWith(
                                       labelText: 'Full Name',
-                                      labelStyle: GoogleFonts.poppins(),
-                                      border: const OutlineInputBorder(),
                                     ),
                                     validationMessages: {
                                       'required': (_) => 'Full name is required',
                                     },
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppConstants.sectionSpacing),
                                   ReactiveTextField(
                                     formControlName: 'email',
-                                    decoration: InputDecoration(
+                                    decoration: AppWidgetStyles.inputDecoration.copyWith(
                                       labelText: 'Email',
-                                      labelStyle: GoogleFonts.poppins(),
-                                      border: const OutlineInputBorder(),
                                     ),
                                     validationMessages: {
                                       'required': (_) => 'Email is required',
                                       'email': (_) => 'Enter a valid email',
                                     },
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppConstants.sectionSpacing),
                                   ReactiveTextField(
                                     formControlName: 'contact',
-                                    decoration: InputDecoration(
+                                    decoration: AppWidgetStyles.inputDecoration.copyWith(
                                       labelText: 'Contact',
                                       floatingLabelBehavior: FloatingLabelBehavior.always,
-                                      labelStyle: GoogleFonts.poppins(),
-                                      border: const OutlineInputBorder(),
-                                      prefixIcon: const Padding(
-                                        padding: EdgeInsets.only(left: 12.0, right: 4.0),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              '🇨🇲 +237 ',
-                                              style: TextStyle(color: Colors.grey),
-                                            ),
-                                          ],
+                                      prefixIcon: Padding(
+                                        padding: const EdgeInsets.only(left: 12.0, right: 4.0),
+                                        child: Text(
+                                          '🇨🇲 +237 ',
+                                          style: AppTypography.caption,
                                         ),
                                       ),
                                     ),
@@ -196,67 +188,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       'pattern': (_) => 'Invalid contact format. Check number of digits.',
                                     },
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppConstants.sectionSpacing),
                                   ReactiveTextField(
                                     formControlName: 'password',
                                     obscureText: true,
-                                    decoration: InputDecoration(
+                                    decoration: AppWidgetStyles.inputDecoration.copyWith(
                                       labelText: 'Password',
-                                      labelStyle: GoogleFonts.poppins(),
-                                      border: const OutlineInputBorder(),
                                     ),
                                     validationMessages: {
                                       'required': (_) => 'Password is required',
                                       'minLength': (_) => 'Password must be at least 6 characters',
                                     },
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppConstants.sectionSpacing),
                                   ReactiveTextField(
                                     formControlName: 'confirm_password',
                                     obscureText: true,
-                                    decoration: InputDecoration(
+                                    decoration: AppWidgetStyles.inputDecoration.copyWith(
                                       labelText: 'Confirm Password',
-                                      labelStyle: GoogleFonts.poppins(),
-                                      border: const OutlineInputBorder(),
                                     ),
                                     validationMessages: {
                                       'required': (_) => 'Please confirm your password',
                                       'mustMatch': (_) => 'Passwords do not match',
                                     },
                                   ),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: AppConstants.sectionSpacing * 1.25),
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
                                       onPressed: _onRegisterPressed,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryColor,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        textStyle: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                      style: AppWidgetStyles.elevatedButton.copyWith(
+                                        padding: WidgetStateProperty.all(
+                                          const EdgeInsets.symmetric(vertical: 12),
                                         ),
                                       ),
                                       child: Text(
                                         'Register',
-                                        style: TextStyle(
-                                          color: Colors.white,
+                                        style: AppTypography.button.copyWith(
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: AppConstants.sectionSpacing),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
                                         'Already have an account? ',
-                                        style: GoogleFonts.poppins(fontSize: 14),
+                                        style: AppTypography.subtitle.copyWith(fontSize: 14),
                                       ),
                                       GestureDetector(
                                         onTap: () {
@@ -264,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         },
                                         child: Text(
                                           'Login',
-                                          style: GoogleFonts.poppins(
+                                          style: AppTypography.subtitle.copyWith(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: primaryColor,
