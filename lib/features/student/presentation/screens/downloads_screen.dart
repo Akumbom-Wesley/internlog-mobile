@@ -11,7 +11,6 @@ import '../../widgets/internship_selector_modal.dart';
 
 class DownloadsScreen extends StatefulWidget {
   final String? role;
-
   const DownloadsScreen({super.key, this.role});
 
   @override
@@ -29,26 +28,25 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       backgroundColor: Colors.white,
       builder: (_) => const InternshipSelectorModal(),
     );
-
     if (internship == null) return;
 
     setState(() {
-      isPdf ? _isDownloadingPdf = true : _isGeneratingReport = true;
+      if (isPdf) _isDownloadingPdf = true;
+      else      _isGeneratingReport = true;
     });
 
     try {
       if (isPdf) {
-        await DownloadService.downloadLogbookPdf(context, internshipId: internship['id']);
+        await DownloadService.downloadLogbookPdf(
+          context,
+          internshipId: internship['id'] as int,
+        );
       } else {
-        await DownloadService.downloadInternshipReport(context, requestId: internship['request_id']);
+        await DownloadService.downloadInternshipReport(
+          context,
+          internshipId: internship['id'] as int,  // pass the same id
+        );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Download failed: $e', style: AppTypography.body),
-          backgroundColor: AppColors.error,
-        ),
-      );
     } finally {
       setState(() {
         _isDownloadingPdf = false;
@@ -60,7 +58,6 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-
     return WillPopScope(
       onWillPop: () async {
         context.go('/user/dashboard');
@@ -68,7 +65,8 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Download Reports', style: AppTypography.headerTitle.copyWith(color: Colors.white)),
+          title: Text('Download Reports',
+              style: AppTypography.headerTitle.copyWith(color: Colors.white)),
           centerTitle: true,
           backgroundColor: primaryColor,
           leading: IconButton(
@@ -82,11 +80,14 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
             padding: const EdgeInsets.all(AppConstants.itemPadding),
             child: Column(
               children: [
-                Text('Available Downloads', style: AppTypography.headline, textAlign: TextAlign.center),
+                Text('Available Downloads',
+                    style: AppTypography.headline,
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 8),
                 Text(
                   'Download your documents and reports',
-                  style: AppTypography.subtitle.copyWith(color: Colors.grey[600]),
+                  style: AppTypography.subtitle
+                      .copyWith(color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppConstants.sectionSpacing),
