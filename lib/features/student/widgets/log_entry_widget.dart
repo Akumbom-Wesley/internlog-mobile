@@ -65,7 +65,7 @@ class LogEntryWidgets {
           const SizedBox(height: AppConstants.sectionSpacing),
           buildPhotosSection(entry['photos']),
           const SizedBox(height: AppConstants.sectionSpacing),
-          buildCreatedAtSection(entry['created_at']),
+          buildLastUpdatedSection(entry['updated_at']),
           const SizedBox(height: AppConstants.sectionSpacing),
           buildEditButton(
             isImmutable: entry['is_immutable'] == true,
@@ -151,6 +151,8 @@ class LogEntryWidgets {
           final photo = photos[index] as Map<String, dynamic>;
           final imageUrl = buildImageUrl(photo['photo'] ?? '');
 
+          print('Image URL: $imageUrl'); // Debug print to check the URL
+
           return GestureDetector(
             onTap: () => showFullScreenImage(context, imageUrl),
             child: Container(
@@ -193,6 +195,12 @@ class LogEntryWidgets {
                           'Image not found',
                           style: AppTypography.caption,
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Debug: ${error.toString()}',
+                          style: AppTypography.caption.copyWith(fontSize: 8),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   ),
@@ -221,17 +229,17 @@ class LogEntryWidgets {
     );
   }
 
-  static Widget buildCreatedAtSection(String? createdAt) {
+  static Widget buildLastUpdatedSection(String? updatedAt) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Created On',
+          'Last Updated',
           style: AppTypography.headline,
         ),
         const SizedBox(height: AppConstants.itemSpacing),
         Text(
-          createdAt != null ? formatDate(createdAt) : 'Not available',
+          updatedAt != null ? formatDate(updatedAt) : 'Not available',
           style: AppTypography.body.copyWith(
             color: AppColors.primary.shade700,
           ),

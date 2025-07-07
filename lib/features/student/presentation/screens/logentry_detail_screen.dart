@@ -1,3 +1,4 @@
+// logentry_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:internlog/core/theme/colors.dart';
@@ -8,6 +9,7 @@ import 'package:internlog/features/auth/presentation/widgets/bottom_navigation_b
 import '../../services/log_entry_service.dart';
 import '../../widgets/edit_entry_modal.dart';
 import '../../widgets/log_entry_widget.dart';
+import '../../widgets/logentry_helpers.dart';
 
 class LogEntryDetailScreen extends StatefulWidget {
   final int entryId;
@@ -49,6 +51,11 @@ class _LogEntryDetailScreenState extends State<LogEntryDetailScreen> {
   }
 
   void _showEditEntryModal() {
+    // Extract current photos data including IDs for potential deletion
+    final currentPhotos = _entry!['photos'] as List<dynamic>? ?? [];
+    final currentPhotoUrls = currentPhotos.map<String>((p) => p['photo'] as String).toList();
+    final currentPhotoIds = currentPhotos.map<int>((p) => p['id'] as int).toList();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -56,6 +63,8 @@ class _LogEntryDetailScreenState extends State<LogEntryDetailScreen> {
       builder: (context) => EditEntryModal(
         entryId: widget.entryId,
         initialDescription: _entry!['description'] ?? '',
+        initialPhotos: currentPhotoUrls,
+        currentPhotoIds: currentPhotoIds, // Pass the photo IDs
         onEntryUpdated: _fetchEntry,
       ),
     );
@@ -68,11 +77,11 @@ class _LogEntryDetailScreenState extends State<LogEntryDetailScreen> {
       appBar: AppBar(
         title: Text(
           'Log Entry Details',
-          style: AppTypography.headerTitle,
+          style: AppTypography.headerTitle.copyWith(color: Colors.white),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             if (_entry != null && _entry!['weekly_log'] != null) {
               context.go('/user/logbook/week/${_entry!['weekly_log']}');
@@ -84,7 +93,6 @@ class _LogEntryDetailScreenState extends State<LogEntryDetailScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        shadowColor: AppColors.primary.withOpacity(0.2),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: AppColors.primary))

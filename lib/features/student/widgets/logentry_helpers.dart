@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
-const String _baseUrl = 'http://10.140.91.152:8000';
+const String _baseUrl = 'http://10.111.147.152:8000';
 
 Map<String, dynamic> parseEntryResponse(dynamic response) {
   if (response is Response) {
@@ -32,7 +32,7 @@ String formatDate(String? dateTimeString) {
   }
   try {
     final dt = DateTime.parse(dateTimeString);
-    return DateFormat('dd MMM, yyyy').format(dt);
+    return DateFormat('dd MMM, yyyy \'at\' hh:mm a').format(dt);
   } catch (_) {
     return dateTimeString;
   }
@@ -45,6 +45,11 @@ String buildImageUrl(String rawPath) {
   String normalizedPath = rawPath.startsWith('/')
       ? rawPath.substring(1)
       : rawPath;
+
+  // If the path doesn't start with media/, add it
+  if (!normalizedPath.startsWith('media/')) {
+    normalizedPath = 'media/$normalizedPath';
+  }
 
   // Always construct the full URL consistently
   return '$_baseUrl/$normalizedPath';

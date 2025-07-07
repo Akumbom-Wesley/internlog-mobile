@@ -3,17 +3,23 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:internlog/core/network/dio_client.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
+import 'logentry_helpers.dart';
 
 class EditEntryModal extends StatefulWidget {
   final int entryId;
   final String initialDescription;
+  final List<String> initialPhotos;
+  final List<int> currentPhotoIds;
   final VoidCallback onEntryUpdated;
 
   const EditEntryModal({
     super.key,
     required this.entryId,
     required this.initialDescription,
+    required this.initialPhotos,
+    required this.currentPhotoIds,
     required this.onEntryUpdated,
   });
 
@@ -25,6 +31,9 @@ class _EditEntryModalState extends State<EditEntryModal> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final List<File> _selectedImages = [];
+  List<String> _currentPhotos = [];
+  List<int> _currentPhotoIds = [];
+  Set<int> _photosToDelete = {};
   bool _isSubmitting = false;
   String? _errorMessage;
   final ImagePicker _picker = ImagePicker();
@@ -33,6 +42,8 @@ class _EditEntryModalState extends State<EditEntryModal> {
   void initState() {
     super.initState();
     _descriptionController.text = widget.initialDescription;
+    _currentPhotos = List.from(widget.initialPhotos);
+    _currentPhotoIds = List.from(widget.currentPhotoIds);
   }
 
   @override
@@ -88,6 +99,16 @@ class _EditEntryModalState extends State<EditEntryModal> {
     });
   }
 
+  void _togglePhotoForDeletion(int photoId) {
+    setState(() {
+      if (_photosToDelete.contains(photoId)) {
+        _photosToDelete.remove(photoId);
+      } else {
+        _photosToDelete.add(photoId);
+      }
+    });
+  }
+
   Future<void> _updateEntry() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -102,6 +123,14 @@ class _EditEntryModalState extends State<EditEntryModal> {
         'description': _descriptionController.text.trim(),
       });
 
+      // Add photos to delete
+      if (_photosToDelete.isNotEmpty) {
+        for (int photoId in _photosToDelete) {
+          formData.fields.add(MapEntry('photos_to_delete', photoId.toString()));
+        }
+      }
+
+      // Add new photos
       if (_selectedImages.isNotEmpty) {
         for (int i = 0; i < _selectedImages.length; i++) {
           final file = _selectedImages[i];
@@ -181,6 +210,8 @@ class _EditEntryModalState extends State<EditEntryModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildDescriptionField(),
+                    const SizedBox(height: 24),
+                    _buildCurrentPhotosSection(),
                     const SizedBox(height: 24),
                     _buildPhotoOptionsSection(primaryColor),
                     if (_errorMessage != null) _buildErrorSection(),
@@ -281,12 +312,156 @@ class _EditEntryModalState extends State<EditEntryModal> {
     );
   }
 
+  Widget _buildCurrentPhotosSection() {
+    if (_currentPhotos.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Current Photos',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Tap the X button to remove photos',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 120,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _currentPhotos.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final photoUrl = buildImageUrl(_currentPhotos[index]);
+              final photoId = _currentPhotoIds[index];
+              final isMarkedForDeletion = _photosToDelete.contains(photoId);
+
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          border: isMarkedForDeletion
+                              ? Border.all(color: Colors.red, width: 2)
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Stack(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: photoUrl,
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey[200],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.broken_image,
+                                      size: 30,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Image not found',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (isMarkedForDeletion)
+                              Container(
+                                width: 120,
+                                height: 120,
+                                color: Colors.red.withOpacity(0.7),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.delete_forever,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => _togglePhotoForDeletion(photoId),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isMarkedForDeletion ? Colors.green : Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isMarkedForDeletion ? Icons.undo : Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        if (_photosToDelete.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '${_photosToDelete.length} photo(s) will be deleted',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildPhotoOptionsSection(Color primaryColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Add Photos (Optional)',
+          'Add New Photos (Optional)',
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -343,7 +518,7 @@ class _EditEntryModalState extends State<EditEntryModal> {
       children: [
         const SizedBox(height: 16),
         Text(
-          'Selected Images (${_selectedImages.length})',
+          'New Images to Add (${_selectedImages.length})',
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
