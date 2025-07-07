@@ -124,7 +124,7 @@ class DioClient {
     }
   }
 
-  Future<Map<String, dynamic>> _getHeaders() async {
+  Future<Map<String, dynamic>> getHeaders() async {
     final token = await _storage.read(key: 'access_token');
     return {
       'Authorization': 'Bearer $token',
@@ -224,12 +224,12 @@ class DioClient {
       if (data is FormData) {
         // For form data (file uploads), let Dio handle the content type
         options = Options(
-          headers: await _getHeaders(),
+          headers: await getHeaders(),
         );
       } else {
         // For regular JSON data
         options = Options(
-          headers: await _getHeaders(),
+          headers: await getHeaders(),
           contentType: 'application/json',
         );
       }
@@ -253,12 +253,12 @@ class DioClient {
       if (data is FormData) {
         // For form data (file uploads), let Dio handle the content type
         options = Options(
-          headers: await _getHeaders(),
+          headers: await getHeaders(),
         );
       } else {
         // For regular JSON data
         options = Options(
-          headers: await _getHeaders(),
+          headers: await getHeaders(),
           contentType: 'application/json',
         );
       }
