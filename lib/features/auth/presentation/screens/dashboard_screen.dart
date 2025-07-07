@@ -57,15 +57,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         appBar: AppBar(
           title: Text(
             'Dashboard',
-            style: AppTypography.headline.copyWith(color: primaryColor),
+            style: AppTypography.headline.copyWith(color: Colors.white),
           ),
           centerTitle: true,
           leading: Builder(
             builder: (context) => IconButton(
-              icon: Icon(Icons.menu, color: primaryColor, size: AppConstants.iconSizeLarge),
+              icon: Icon(Icons.menu, color: Colors.white, size: AppConstants.iconSizeLarge),
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
           ),
+          backgroundColor: AppColors.primary,
         ),
         drawer: DrawerWidget(primaryColor: primaryColor),
         body: _isLoading
