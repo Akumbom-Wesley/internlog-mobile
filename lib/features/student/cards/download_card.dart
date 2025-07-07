@@ -27,7 +27,8 @@ class DownloadCard extends StatelessWidget {
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.9),
+      constraints:
+      BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.9),
       child: Card(
         elevation: 8,
         shadowColor: primaryColor.withOpacity(0.3),
@@ -42,12 +43,17 @@ class DownloadCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppConstants.iconPadding),
                 decoration: AppDecorations.iconContainer,
-                child: Icon(icon, size: AppConstants.iconSizeLarge, color: primaryColor),
+                child: Icon(icon,
+                    size: AppConstants.iconSizeLarge, color: primaryColor),
               ),
               const SizedBox(height: AppConstants.itemSpacing),
-              Text(title, style: AppTypography.headline, textAlign: TextAlign.center),
+              Text(title,
+                  style: AppTypography.headline, textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              Text(description, style: AppTypography.subtitle.copyWith(color: Colors.grey[600]), textAlign: TextAlign.center),
+              Text(description,
+                  style: AppTypography.subtitle
+                      .copyWith(color: Colors.grey[600]),
+                  textAlign: TextAlign.center),
               const SizedBox(height: AppConstants.sectionSpacing),
               SizedBox(
                 width: double.infinity,
@@ -63,22 +69,38 @@ class DownloadCard extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       ),
                       const SizedBox(width: AppConstants.itemSpacing),
-                      Text(
-                        fileExtension == 'pdf' ? 'Downloading PDF...' : 'Generating Report...',
-                        style: AppTypography.button,
+                      Flexible(
+                        child: Text(
+                          fileExtension == 'pdf'
+                              ? 'Downloading PDF...'
+                              : 'Generating Report...',
+                          style: AppTypography.button,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                        ),
                       ),
                     ],
                   )
                       : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(fileExtension == 'pdf' ? Icons.download : Icons.file_download, color: Colors.white),
+                      Icon(
+                        fileExtension == 'pdf'
+                            ? Icons.download
+                            : Icons.file_download,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 8),
-                      Text(fileExtension == 'pdf' ? 'Download PDF' : 'Download Report', style: AppTypography.button),
+                      Text(
+                          fileExtension == 'pdf'
+                              ? 'Download PDF'
+                              : 'Download Report',
+                          style: AppTypography.button),
                     ],
                   ),
                 ),

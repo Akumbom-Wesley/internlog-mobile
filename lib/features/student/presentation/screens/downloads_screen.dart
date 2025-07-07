@@ -44,7 +44,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       } else {
         await DownloadService.downloadInternshipReport(
           context,
-          internshipId: internship['id'] as int,  // pass the same id
+          internshipId: internship['id'] as int,
         );
       }
     } finally {
@@ -65,8 +65,10 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Download Reports',
-              style: AppTypography.headerTitle.copyWith(color: Colors.white)),
+          title: Text(
+            'Download Reports',
+            style: AppTypography.headerTitle.copyWith(color: Colors.white),
+          ),
           centerTitle: true,
           backgroundColor: primaryColor,
           leading: IconButton(
@@ -86,8 +88,8 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Download your documents and reports',
-                  style: AppTypography.subtitle
-                      .copyWith(color: Colors.grey[600]),
+                  style:
+                  AppTypography.subtitle.copyWith(color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppConstants.sectionSpacing),

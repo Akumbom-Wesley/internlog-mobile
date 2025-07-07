@@ -5,9 +5,9 @@ import '../../../../core/theme/typography.dart';
 
 class InternshipSelectorModal extends StatefulWidget {
   const InternshipSelectorModal({super.key});
-
   @override
-  State<InternshipSelectorModal> createState() => _InternshipSelectorModalState();
+  State<InternshipSelectorModal> createState() =>
+      _InternshipSelectorModalState();
 }
 
 class _InternshipSelectorModalState extends State<InternshipSelectorModal> {
@@ -23,10 +23,11 @@ class _InternshipSelectorModalState extends State<InternshipSelectorModal> {
 
   Future<void> _fetchInternships() async {
     try {
-      final result = await _dioClient.get('api/internships/list?status=completed');
+      final result =
+      await _dioClient.get('api/internships/list?status=completed');
       if (mounted) {
         setState(() {
-          internships = result;
+          internships = result as List<dynamic>;
           isLoading = false;
         });
       }
@@ -49,20 +50,26 @@ class _InternshipSelectorModalState extends State<InternshipSelectorModal> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+          child:
+          Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+    }
     return SafeArea(
-      child: isLoading
-          ? const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
-          : ListView.builder(
+      child: ListView.builder(
         shrinkWrap: true,
         itemCount: internships.length,
         itemBuilder: (ctx, i) {
-          final item = internships[i];
-          final company = item['company_name'] ?? item['company'] ?? 'Unknown Company';
+          final item = internships[i] as Map<String, dynamic>;
+          final companyName = (item['company'] is Map)
+              ? (item['company']['name'] as String? ?? 'Unknown Company')
+              : (item['company']?.toString() ?? 'Unknown Company');
 
           return ListTile(
-            title: Text('Internship - $company', style: AppTypography.body),
+            title: Text('Internship – $companyName',
+                style: AppTypography.body),
             subtitle: Text(
-              'From: ${_formatDate(item['start_date'])} - To: ${_formatDate(item['end_date'])}',
+              'From ${_formatDate(item['start_date'])} to ${_formatDate(item['end_date'])}',
             ),
             onTap: () => Navigator.pop(context, item),
           );
