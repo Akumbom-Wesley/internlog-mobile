@@ -67,9 +67,9 @@ class _InternshipRequestItemState extends State<InternshipRequestItem> {
                         value: selectedSupervisorId,
                         items: supervisors.map<DropdownMenuItem<int>>((sup) {
                           return DropdownMenuItem<int>(
-                            value: int.parse(sup['id'].toString()),
+                            value: int.tryParse(sup['id']?.toString() ?? '') ?? 0,
                             child: Text(
-                              sup['user_name'],
+                              sup['user_name'] ?? 'Unknown Supervisor',
                               style: AppTypography.body,
                               overflow: TextOverflow.ellipsis,
                             ),
