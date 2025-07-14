@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:internlog/core/theme/colors.dart';
 import 'package:internlog/core/theme/constants.dart';
 import 'package:internlog/core/theme/decorations.dart';
@@ -9,7 +10,8 @@ import 'active_internships_screen.dart';
 import 'pending_requests_screen.dart';
 
 class CompanyDashboard extends StatefulWidget {
-  const CompanyDashboard({super.key, required String role});
+  final String role;
+  const CompanyDashboard({super.key, required this.role});
 
   @override
   _CompanyDashboardState createState() => _CompanyDashboardState();
@@ -70,13 +72,9 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
               CompanyDashboardWidgets.buildActiveInternshipsSection(
                 activeInternships: _activeInternships ?? [],
                 onViewAllPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ActiveInternshipsScreen(
-                        internships: _activeInternships ?? [],
-                      ),
-                    ),
+                  context.go(
+                    '/company/internships',
+                    extra: {'internships': _activeInternships ?? []},
                   );
                 },
                 formatDate: _service.formatDate,
@@ -85,14 +83,12 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
               CompanyDashboardWidgets.buildPendingRequestsSection(
                 pendingRequests: _pendingRequests ?? [],
                 onViewAllPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PendingRequestsScreen(
-                        requests: _pendingRequests ?? [],
-                        onRequestProcessed: _fetchData,
-                      ),
-                    ),
+                  context.go(
+                    '/company/requests',
+                    extra: {
+                      'requests': _pendingRequests ?? [],
+                      'onRequestProcessed': _fetchData,
+                    },
                   );
                 },
                 onRequestProcessed: _fetchData,

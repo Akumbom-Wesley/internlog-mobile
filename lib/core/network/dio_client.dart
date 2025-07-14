@@ -10,7 +10,7 @@ class DioClient {
   FlutterSecureStorage get storage => _storage;
 
   DioClient() {
-    _dio.options.baseUrl = 'http://10.111.147.152:8000/';
+    _dio.options.baseUrl = 'http://10.154.5.152:8000/';
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {

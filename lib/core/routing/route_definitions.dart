@@ -13,6 +13,10 @@ import 'package:internlog/features/student/presentation/screens/logentry_detail_
 import 'package:internlog/features/student/presentation/screens/student_dashboard.dart';
 import 'package:internlog/features/student/presentation/screens/weekly_logs.dart';
 import 'package:internlog/features/user/presentation/screens/user_profile_screen.dart';
+import 'package:internlog/features/supervisor/presentation/screens/supervisor_dashboard.dart'; // Added import
+import '../../features/company/presentation/screens/active_internships_screen.dart';
+import '../../features/company/presentation/screens/company_dashboard.dart';
+import '../../features/company/presentation/screens/pending_requests_screen.dart';
 
 class RouteDefinitions {
   static List<GoRoute> get routes => [
@@ -53,7 +57,7 @@ class RouteDefinitions {
     ),
     GoRoute(
       path: '/user/downloads',
-      builder: (context, state) => const DownloadsScreen(role:"student"),
+      builder: (context, state) => const DownloadsScreen(role: "student"),
     ),
 
     // Logbook Routes
@@ -78,7 +82,7 @@ class RouteDefinitions {
 
     GoRoute(
       path: '/user/students',
-      builder: (context, state) => const StudentDashboard(role: '',),
+      builder: (context, state) => const StudentDashboard(role: ''),
     ),
 
     GoRoute(
@@ -88,6 +92,44 @@ class RouteDefinitions {
         return UserProfileScreen(userId: id);
       },
     ),
+
+    // Supervisor Routes
+    GoRoute(
+      path: '/supervisor/students',
+      builder: (context, state) {
+        final role = state.extra as String? ?? 'supervisor';
+        return SupervisorDashboard(role: role);
+      },
+    ),
+
+    // Company Routes
+    GoRoute(
+      path: '/company/dashboard',
+      builder: (context, state) {
+        final role = state.extra as String? ?? 'company_admin';
+        return CompanyDashboard(role: role);
+      },
+    ),
+    GoRoute(
+      path: '/company/internships',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>? ?? {};
+        return ActiveInternshipsScreen(
+          internships: args['internships'] ?? [],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/company/requests',
+      builder: (context, state) {
+        final args = state.extra as Map<String, dynamic>? ?? {};
+        return PendingRequestsScreen(
+          requests: args['requests'] ?? [],
+          onRequestProcessed: args['onRequestProcessed'] ?? () {},
+        );
+      },
+    ),
+
     // Feature Routes (Placeholder)
     GoRoute(
       path: '/apply-internship',

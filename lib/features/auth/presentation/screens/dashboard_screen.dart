@@ -19,7 +19,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  String? _role;
+  String _role = 'student'; // Initialize with default value
   bool _isLoading = true;
 
   @override
@@ -33,7 +33,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final dioClient = DioClient();
       final userData = await dioClient.getCurrentUser();
       setState(() {
-        _role = userData['role'];
+        _role = userData['role'] ?? 'student'; // Provide fallback value
       });
     } catch (e) {
       if (mounted) {
@@ -72,11 +72,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         body: _isLoading
             ? Center(child: CircularProgressIndicator(color: AppColors.primary))
             : _role == 'supervisor'
-            ? SupervisorDashboard(role: _role!)
+            ? SupervisorDashboard(role: _role)
             : _role == 'student'
-            ? StudentDashboard(role: _role!)
+            ? StudentDashboard(role: _role)
             : _role == 'company_admin'
-            ? CompanyDashboard(role: _role!)
+            ? CompanyDashboard(role: _role)
             : Center(
           child: Text(
             'Welcome to the $_role Dashboard!',
