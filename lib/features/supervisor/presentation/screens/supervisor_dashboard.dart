@@ -101,11 +101,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: _isLoading
-            ? Center(
-          child: CircularProgressIndicator(
-            color: AppColors.primary,
-          ),
-        )
+            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
             : SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.itemPadding),
           child: Column(
@@ -134,10 +130,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               ),
             ],
           ),
-        ),
-        bottomNavigationBar: BottomNavBar(
-          role: widget.role,
-          currentIndex: _currentIndex, // Reflects the current tab
         ),
       ),
     );

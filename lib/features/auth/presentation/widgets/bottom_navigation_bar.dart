@@ -163,17 +163,26 @@ class BottomNavBar extends StatelessWidget {
 
   BottomNavigationBar _buildSupervisorNavBar(BuildContext context) {
     return BottomNavigationBar(
-      currentIndex: currentIndex,
+      currentIndex: currentIndex.clamp(0, 2), // Ensure index is within valid range
       onTap: (index) {
+        final route = GoRouter.of(context);
+        final currentRoute = route.routerDelegate.currentConfiguration.uri.toString();
+
         switch (index) {
           case 0:
-            context.go('/user/dashboard');
+            if (currentRoute != '/user/dashboard') {
+              context.go('/user/dashboard', extra: role);
+            }
             break;
           case 1:
-            context.go('/supervisor/students');
+            if (currentRoute != '/supervisor/students') {
+              context.go('/supervisor/students', extra: role);
+            }
             break;
           case 2:
-            context.go('/user/profile');
+            if (currentRoute != '/user/profile') {
+              context.go('/user/profile', extra: role);
+            }
             break;
         }
       },

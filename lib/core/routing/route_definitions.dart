@@ -12,6 +12,7 @@ import 'package:internlog/features/student/presentation/screens/log_entries_scre
 import 'package:internlog/features/student/presentation/screens/logentry_detail_screen.dart';
 import 'package:internlog/features/student/presentation/screens/student_dashboard.dart';
 import 'package:internlog/features/student/presentation/screens/weekly_logs.dart';
+import 'package:internlog/features/supervisor/presentation/screens/students_screen.dart';
 import 'package:internlog/features/user/presentation/screens/user_profile_screen.dart';
 import 'package:internlog/features/supervisor/presentation/screens/supervisor_dashboard.dart'; // Added import
 import '../../features/company/presentation/screens/active_internships_screen.dart';
@@ -98,7 +99,7 @@ class RouteDefinitions {
       path: '/supervisor/students',
       builder: (context, state) {
         final role = state.extra as String? ?? 'supervisor';
-        return SupervisorDashboard(role: role);
+        return StudentsScreen(role: role);
       },
     ),
 
