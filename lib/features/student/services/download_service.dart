@@ -26,22 +26,29 @@ class DownloadService {
     bool usePost = false,
   }) async {
     try {
-      // request permission
-      final status = await Permission.storage.request();
-      if (!status.isGranted) throw Exception('Storage permission denied');
+      // --- Permissions ---
+      if (Platform.isAndroid) {
+        // Android 11+ needs MANAGE_EXTERNAL_STORAGE
+        if (!(await Permission.manageExternalStorage.isGranted)) {
+          final status = await Permission.manageExternalStorage.request();
+          if (!status.isGranted) {
+            throw Exception('Storage permission denied');
+          }
+        }
+      }
 
-      // ensure folder
+      // --- Prepare Downloads directory ---
       final downloadsDir = Directory('/storage/emulated/0/Download');
       if (!await downloadsDir.exists()) {
         await downloadsDir.create(recursive: true);
       }
       final savePath = '${downloadsDir.path}/$fileName';
 
-      // fetch bytes
+      // --- Fetch bytes ---
       final options = Options(
         responseType: ResponseType.bytes,
         followRedirects: false,
-        validateStatus: (s) => s! < 500,
+        validateStatus: (s) => s != null && s < 500,
         headers: await _dioClient.getHeaders(),
       );
       late Response<List<int>> resp;
@@ -54,13 +61,13 @@ class DownloadService {
         throw Exception('Server returned ${resp.statusCode}');
       }
 
-      // write file
+      // --- Write file ---
       final file = File(savePath);
       await file.writeAsBytes(resp.data!);
 
       scanFile(savePath);
 
-      // success
+      // --- Success Snackbar ---
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -68,9 +75,7 @@ class DownloadService {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: AppConstants.itemSpacing),
-                Expanded(
-                    child: Text('$fileName saved to Downloads',
-                        style: AppTypography.body)),
+                Expanded(child: Text('$fileName saved to Downloads', style: AppTypography.body)),
               ],
             ),
             backgroundColor: AppColors.approved,
@@ -79,6 +84,7 @@ class DownloadService {
         );
       }
     } catch (e) {
+      // --- Error Snackbar ---
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -86,9 +92,7 @@ class DownloadService {
               children: [
                 const Icon(Icons.error, color: Colors.white),
                 const SizedBox(width: AppConstants.itemSpacing),
-                Expanded(
-                    child: Text('Download failed: $e',
-                        style: AppTypography.body)),
+                Expanded(child: Text('Download failed: $e', style: AppTypography.body)),
               ],
             ),
             backgroundColor: AppColors.error,
@@ -99,33 +103,15 @@ class DownloadService {
     }
   }
 
-  static Future<void> downloadLogbookPdf(
-      BuildContext context, {
-        required int internshipId,
-      }) async {
-    final url =
-        'http://10.108.240.152:8000/api/logbooks/$internshipId/download/';
+  static Future<void> downloadLogbookPdf(BuildContext context, { required int internshipId }) async {
+    final url = 'http://10.108.240.152:8000/api/logbooks/$internshipId/download/';
     final fileName = 'logbook_$internshipId.pdf';
-    await _downloadFile(
-      context: context,
-      url: url,
-      fileName: fileName,
-      usePost: false,
-    );
+    await _downloadFile(context: context, url: url, fileName: fileName, usePost: false);
   }
 
-  static Future<void> downloadInternshipReport(
-      BuildContext context, {
-        required int internshipId,
-      }) async {
-    final url =
-        'http://10.108.240.152:8000/api/internships/$internshipId/generate-report/';
+  static Future<void> downloadInternshipReport(BuildContext context, { required int internshipId }) async {
+    final url = 'http://10.108.240.152:8000/api/internships/$internshipId/generate-report/';
     final fileName = 'internship_report_$internshipId.docx';
-    await _downloadFile(
-      context: context,
-      url: url,
-      fileName: fileName,
-      usePost: true,
-    );
+    await _downloadFile(context: context, url: url, fileName: fileName, usePost: true);
   }
 }
