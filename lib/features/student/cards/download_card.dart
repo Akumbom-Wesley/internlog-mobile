@@ -92,14 +92,14 @@ class DownloadCard extends StatelessWidget {
                       Icon(
                         fileExtension == 'pdf'
                             ? Icons.download
-                            : Icons.file_download,
+                            : Icons.auto_awesome,
                         color: Colors.white,
                       ),
                       const SizedBox(width: 8),
                       Text(
                           fileExtension == 'pdf'
                               ? 'Download PDF'
-                              : 'Download Report',
+                              : 'Generate Report',
                           style: AppTypography.button),
                     ],
                   ),

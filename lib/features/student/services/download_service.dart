@@ -104,7 +104,7 @@ class DownloadService {
         required int internshipId,
       }) async {
     final url =
-        'http://10.154.5.152:8000/api/logbooks/$internshipId/download/';
+        'http://10.108.240.152:8000/api/logbooks/$internshipId/download/';
     final fileName = 'logbook_$internshipId.pdf';
     await _downloadFile(
       context: context,
@@ -119,7 +119,7 @@ class DownloadService {
         required int internshipId,
       }) async {
     final url =
-        'http://10.154.5.152:8000/api/internships/$internshipId/generate-report/';
+        'http://10.108.240.152:8000/api/internships/$internshipId/generate-report/';
     final fileName = 'internship_report_$internshipId.docx';
     await _downloadFile(
       context: context,

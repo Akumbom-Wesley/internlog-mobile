@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
-const String _baseUrl = 'http://10.154.5.152:8000';
+const String _baseUrl = 'http://10.108.240.152:8000';
 
 Map<String, dynamic> parseEntryResponse(dynamic response) {
   if (response is Response) {
