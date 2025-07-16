@@ -105,6 +105,9 @@ class DownloadService {
     if (code == 404) {
       _showError(context, 'You have not completed this internship yet');
       return;
+    }   if (code == 400) {
+      _showError(context, 'You have not completed this internship yet');
+      return;
     }
     if (code != 200) {
       _showError(
